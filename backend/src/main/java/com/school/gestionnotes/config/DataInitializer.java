@@ -46,16 +46,31 @@ public class DataInitializer implements CommandLineRunner {
                 userRepository.save(admin);
                 System.out.println(">>> Admin user created: admin / admin123");
             }
-            if (!userRepository.existsByUsername("student1")) {
-                User student = User.builder()
+            User student = userRepository.findByUsername("student1").orElse(null);
+            if (student == null) {
+                student = User.builder()
                         .username("student1")
                         .email("student1@school.com")
                         .password(passwordEncoder.encode("student123"))
                         .role(Role.ROLE_ETUDIANT)
                         .active(true)
                         .build();
-                userRepository.save(student);
+                student = userRepository.save(student);
                 System.out.println(">>> Student user created: student1 / student123");
+            }
+            
+            // Check if this student user has an Etudiant profile
+            final User finalStudent = student;
+            if (etudiantRepository.findByUserUsername("student1").isEmpty()) {
+                Etudiant etudiantProfile = Etudiant.builder()
+                        .nom("Etudiant")
+                        .prenom("Test")
+                        .cne("TEST12345")
+                        .user(finalStudent)
+                        .email(finalStudent.getEmail())
+                        .build();
+                etudiantRepository.save(etudiantProfile);
+                System.out.println(">>> Etudiant profile created and linked to student1");
             }
         } catch (Exception e) {
             System.err.println(">>> Admin initialization skipped: " + e.getMessage());
