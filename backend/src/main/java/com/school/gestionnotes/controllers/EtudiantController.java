@@ -34,25 +34,30 @@ public class EtudiantController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public Etudiant createEtudiant(@RequestBody Etudiant etudiant) {
-        // Generate a user account for the student if CNE is provided
-        if (etudiant.getCne() != null && !etudiant.getCne().trim().isEmpty()) {
-            String generatedUsername = etudiant.getCne().trim();
-            String generatedPassword = etudiant.getCne().trim(); // Initial password is the CNE
-            
-            if (!userRepository.existsByUsername(generatedUsername)) {
-                com.school.gestionnotes.entities.User newUser = com.school.gestionnotes.entities.User.builder()
-                        .username(generatedUsername)
-                        .email(etudiant.getEmail() != null ? etudiant.getEmail() : generatedUsername + "@school.com")
-                        .password(passwordEncoder.encode(generatedPassword))
-                        .role(com.school.gestionnotes.enums.Role.ROLE_ETUDIANT)
-                        .active(true)
-                        .build();
-                userRepository.save(newUser);
-                etudiant.setUser(newUser);
-            } else {
-                // If the user already exists, just link it
-                userRepository.findByUsername(generatedUsername).ifPresent(etudiant::setUser);
-            }
+        // Generate a user account for the student
+        String generatedUsername = etudiant.getEmail();
+        if (generatedUsername == null || generatedUsername.trim().isEmpty()) {
+            generatedUsername = etudiant.getCne() + "@school.com";
+            etudiant.setEmail(generatedUsername);
+        }
+        
+        String generatedPassword = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase() + "x$"; // Hard password
+        
+        if (!userRepository.existsByUsername(generatedUsername)) {
+            com.school.gestionnotes.entities.User newUser = com.school.gestionnotes.entities.User.builder()
+                    .username(generatedUsername)
+                    .email(generatedUsername)
+                    .password(passwordEncoder.encode(generatedPassword))
+                    .role(com.school.gestionnotes.enums.Role.ROLE_ETUDIANT)
+                    .active(true)
+                    .build();
+            userRepository.save(newUser);
+            etudiant.setUser(newUser);
+            etudiant.setGeneratedPassword(generatedPassword);
+        } else {
+            // If the user already exists, just link it
+            userRepository.findByUsername(generatedUsername).ifPresent(etudiant::setUser);
+            etudiant.setGeneratedPassword("Utilisateur Existant");
         }
 
         if (etudiant.getFiliere() != null && etudiant.getFiliere().getId() != null) {
@@ -61,7 +66,9 @@ public class EtudiantController {
             etudiant.setFiliere(null);
         }
 
-        return etudiantRepository.save(etudiant);
+        Etudiant savedEtudiant = etudiantRepository.save(etudiant);
+        savedEtudiant.setGeneratedPassword(etudiant.getGeneratedPassword()); // Ensure it's passed back
+        return savedEtudiant;
     }
 
     @GetMapping("/{id}")

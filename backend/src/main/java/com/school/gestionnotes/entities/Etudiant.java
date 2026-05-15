@@ -42,4 +42,7 @@ public class Etudiant {
     @OneToMany(mappedBy = "etudiant", cascade = CascadeType.REMOVE)
     @com.fasterxml.jackson.annotation.JsonIgnore
     private List<Note> notes;
+
+    @Transient
+    private String generatedPassword;
 }

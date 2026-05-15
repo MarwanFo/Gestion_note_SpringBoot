@@ -73,21 +73,30 @@ const EtudiantsList = () => {
         setIsModalOpen(true);
     };
 
+    const [successModal, setSuccessModal] = useState({ isOpen: false, username: '', password: '' });
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
             if (isEditing) {
                 await api.put(`/etudiants/${selectedId}`, formData);
+                setIsModalOpen(false);
+                setFormData({ cne: '', nom: '', prenom: '', telephone: '', dateNaissance: '', adresse: '', email: '', filiere: { id: '' } });
+                setIsEditing(false);
+                setSelectedId(null);
+                fetchEtudiants();
             } else {
-                await api.post('/etudiants', formData);
-                alert(`L'étudiant a été ajouté avec succès !\n\nIMPORTANT :\nNom d'utilisateur : ${formData.cne}\nMot de passe par défaut : ${formData.cne}`);
+                const response = await api.post('/etudiants', formData);
+                setIsModalOpen(false);
+                setSuccessModal({
+                    isOpen: true,
+                    username: response.data.email,
+                    password: response.data.generatedPassword
+                });
+                setFormData({ cne: '', nom: '', prenom: '', telephone: '', dateNaissance: '', adresse: '', email: '', filiere: { id: '' } });
+                fetchEtudiants();
             }
-            setIsModalOpen(false);
-            setFormData({ cne: '', nom: '', prenom: '', telephone: '', dateNaissance: '', adresse: '', email: '', filiere: { id: '' } });
-            setIsEditing(false);
-            setSelectedId(null);
-            fetchEtudiants();
         } catch (error) {
             alert("Erreur lors de l'enregistrement.");
         } finally {
@@ -203,6 +212,38 @@ const EtudiantsList = () => {
                 </div>
             </div>
 
+            {/* Success Password Modal */}
+            {successModal.isOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 text-center p-8">
+                        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Save className="w-8 h-8" />
+                        </div>
+                        <h2 className="text-2xl font-extrabold text-slate-900 mb-2">Compte Créé !</h2>
+                        <p className="text-slate-500 text-sm mb-6">L'étudiant peut maintenant se connecter avec ces identifiants sécurisés.</p>
+                        
+                        <div className="bg-slate-50 rounded-2xl p-4 mb-6 border border-slate-100 text-left space-y-3">
+                            <div>
+                                <p className="text-xs font-bold text-slate-400 uppercase">Email / Utilisateur</p>
+                                <p className="font-mono text-slate-900 font-bold select-all">{successModal.username}</p>
+                            </div>
+                            <div className="h-px bg-slate-200" />
+                            <div>
+                                <p className="text-xs font-bold text-slate-400 uppercase">Mot de passe</p>
+                                <p className="font-mono text-blue-600 font-black text-lg select-all tracking-wider">{successModal.password}</p>
+                            </div>
+                        </div>
+
+                        <button 
+                            onClick={() => setSuccessModal({ isOpen: false, username: '', password: '' })}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20"
+                        >
+                            C'est noté !
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
@@ -220,7 +261,7 @@ const EtudiantsList = () => {
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             {!isEditing && (
                                 <div className="bg-blue-50 border border-blue-100 text-blue-700 px-4 py-3 rounded-xl text-sm font-medium">
-                                    💡 Un compte utilisateur sera automatiquement créé pour cet étudiant. Le nom d'utilisateur et le mot de passe initiaux correspondront au <strong>CNE</strong>.
+                                    💡 Un compte sécurisé sera généré. Le <strong>Mail</strong> servira de nom d'utilisateur.
                                 </div>
                             )}
                             <div className="grid grid-cols-2 gap-4">
