@@ -81,6 +81,7 @@ const EtudiantsList = () => {
                 await api.put(`/etudiants/${selectedId}`, formData);
             } else {
                 await api.post('/etudiants', formData);
+                alert(`L'étudiant a été ajouté avec succès !\n\nIMPORTANT :\nNom d'utilisateur : ${formData.cne}\nMot de passe par défaut : ${formData.cne}`);
             }
             setIsModalOpen(false);
             setFormData({ cne: '', nom: '', prenom: '', telephone: '', dateNaissance: '', adresse: '', email: '', filiere: { id: '' } });
