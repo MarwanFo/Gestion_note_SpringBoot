@@ -73,7 +73,14 @@ public class EtudiantController {
             if (etudiantDetails.getFiliere() != null && etudiantDetails.getFiliere().getId() != null) {
                 filiereRepository.findById(etudiantDetails.getFiliere().getId()).ifPresent(etudiant::setFiliere);
             }
-            return ResponseEntity.ok(etudiantRepository.save(etudiant));
         }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('ETUDIANT')")
+    public ResponseEntity<Etudiant> getMyProfile(java.security.Principal principal) {
+        return etudiantRepository.findByUserUsername(principal.getName())
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

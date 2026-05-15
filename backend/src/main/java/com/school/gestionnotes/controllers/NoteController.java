@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.http.ResponseEntity;
 
 @RestController
 @RequestMapping("/api/notes")
@@ -39,5 +40,15 @@ public class NoteController {
         }
         
         return noteRepository.save(note);
+    }
+    @Autowired
+    private com.school.gestionnotes.repositories.EtudiantRepository etudiantRepository;
+
+    @GetMapping("/mes-notes")
+    @PreAuthorize("hasRole('ETUDIANT')")
+    public ResponseEntity<List<Note>> getMyNotes(java.security.Principal principal) {
+        return etudiantRepository.findByUserUsername(principal.getName())
+                .map(etudiant -> ResponseEntity.ok(noteRepository.findByEtudiantId(etudiant.getId())))
+                .orElse(ResponseEntity.notFound().build());
     }
 }

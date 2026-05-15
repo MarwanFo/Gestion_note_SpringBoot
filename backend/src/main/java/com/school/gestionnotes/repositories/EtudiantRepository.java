@@ -11,4 +11,5 @@ public interface EtudiantRepository extends JpaRepository<Etudiant, Long> {
     Optional<Etudiant> findByCne(String cne);
     boolean existsByCne(String cne);
     java.util.List<Etudiant> findByFiliereId(Long filiereId);
+    Optional<Etudiant> findByUserUsername(String username);
 }

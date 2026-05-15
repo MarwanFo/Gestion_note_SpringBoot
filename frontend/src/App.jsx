@@ -10,6 +10,7 @@ import MatieresList from './pages/admin/MatieresList';
 import FilieresList from './pages/admin/FilieresList';
 import SaisieNotes from './pages/prof/SaisieNotes';
 import MesClasses from './pages/prof/MesClasses';
+import MesNotes from './pages/etudiant/MesNotes';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             <Route path="filieres" element={<FilieresList />} />
             <Route path="saisie-notes" element={<SaisieNotes />} />
             <Route path="mes-classes" element={<MesClasses />} />
+            <Route path="mes-notes" element={<MesNotes />} />
           </Route>
         </Routes>
       </div>
