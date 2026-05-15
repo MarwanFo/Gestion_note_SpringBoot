@@ -73,6 +73,7 @@ public class EtudiantController {
             if (etudiantDetails.getFiliere() != null && etudiantDetails.getFiliere().getId() != null) {
                 filiereRepository.findById(etudiantDetails.getFiliere().getId()).ifPresent(etudiant::setFiliere);
             }
+            return ResponseEntity.ok(etudiantRepository.save(etudiant));
         }).orElse(ResponseEntity.notFound().build());
     }
 
