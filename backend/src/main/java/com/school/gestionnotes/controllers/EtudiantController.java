@@ -33,32 +33,30 @@ public class EtudiantController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public Etudiant createEtudiant(@RequestBody Etudiant etudiant) {
-        // Generate a user account for the student
-        String generatedUsername = etudiant.getEmail();
-        if (generatedUsername == null || generatedUsername.trim().isEmpty()) {
-            generatedUsername = etudiant.getCne() + "@school.com";
-            etudiant.setEmail(generatedUsername);
+    public ResponseEntity<?> createEtudiant(@RequestBody Etudiant etudiant) {
+        // Validate email
+        if (etudiant.getEmail() == null || etudiant.getEmail().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("L'email est obligatoire.");
         }
         
+        String generatedUsername = etudiant.getEmail().trim();
+        
+        if (userRepository.existsByUsername(generatedUsername) || userRepository.existsByEmail(generatedUsername)) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT).body("Cet email est déjà utilisé.");
+        }
+
         String generatedPassword = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase() + "x$"; // Hard password
         
-        if (!userRepository.existsByUsername(generatedUsername)) {
-            com.school.gestionnotes.entities.User newUser = com.school.gestionnotes.entities.User.builder()
-                    .username(generatedUsername)
-                    .email(generatedUsername)
-                    .password(passwordEncoder.encode(generatedPassword))
-                    .role(com.school.gestionnotes.enums.Role.ROLE_ETUDIANT)
-                    .active(true)
-                    .build();
-            userRepository.save(newUser);
-            etudiant.setUser(newUser);
-            etudiant.setGeneratedPassword(generatedPassword);
-        } else {
-            // If the user already exists, just link it
-            userRepository.findByUsername(generatedUsername).ifPresent(etudiant::setUser);
-            etudiant.setGeneratedPassword("Utilisateur Existant");
-        }
+        com.school.gestionnotes.entities.User newUser = com.school.gestionnotes.entities.User.builder()
+                .username(generatedUsername)
+                .email(generatedUsername)
+                .password(passwordEncoder.encode(generatedPassword))
+                .role(com.school.gestionnotes.enums.Role.ROLE_ETUDIANT)
+                .active(true)
+                .build();
+        userRepository.save(newUser);
+        etudiant.setUser(newUser);
+        etudiant.setGeneratedPassword(generatedPassword);
 
         if (etudiant.getFiliere() != null && etudiant.getFiliere().getId() != null) {
             filiereRepository.findById(etudiant.getFiliere().getId()).ifPresent(etudiant::setFiliere);
@@ -68,7 +66,7 @@ public class EtudiantController {
 
         Etudiant savedEtudiant = etudiantRepository.save(etudiant);
         savedEtudiant.setGeneratedPassword(etudiant.getGeneratedPassword()); // Ensure it's passed back
-        return savedEtudiant;
+        return ResponseEntity.ok(savedEtudiant);
     }
 
     @GetMapping("/{id}")
@@ -101,19 +99,27 @@ public class EtudiantController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Etudiant> updateEtudiant(@PathVariable Long id, @RequestBody Etudiant etudiantDetails) {
+    public ResponseEntity<?> updateEtudiant(@PathVariable Long id, @RequestBody Etudiant etudiantDetails) {
+        if (etudiantDetails.getEmail() == null || etudiantDetails.getEmail().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("L'email est obligatoire.");
+        }
+        
         return etudiantRepository.findById(id).map(etudiant -> {
             etudiant.setCne(etudiantDetails.getCne());
             etudiant.setNom(etudiantDetails.getNom());
             etudiant.setPrenom(etudiantDetails.getPrenom());
             etudiant.setTelephone(etudiantDetails.getTelephone());
             etudiant.setAdresse(etudiantDetails.getAdresse());
-            etudiant.setEmail(etudiantDetails.getEmail());
+            etudiant.setEmail(etudiantDetails.getEmail().trim());
             etudiant.setFiliere(null);
             if (etudiantDetails.getFiliere() != null && etudiantDetails.getFiliere().getId() != null) {
                 filiereRepository.findById(etudiantDetails.getFiliere().getId()).ifPresent(etudiant::setFiliere);
             }
-            return ResponseEntity.ok(etudiantRepository.save(etudiant));
+            try {
+                return ResponseEntity.ok(etudiantRepository.save(etudiant));
+            } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                return ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT).body("Cet email ou CNE est déjà utilisé.");
+            }
         }).orElse(ResponseEntity.notFound().build());
     }
 

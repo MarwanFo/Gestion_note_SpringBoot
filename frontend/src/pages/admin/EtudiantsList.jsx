@@ -98,7 +98,11 @@ const EtudiantsList = () => {
                 fetchEtudiants();
             }
         } catch (error) {
-            alert("Erreur lors de l'enregistrement.");
+            if (error.response && error.response.data && typeof error.response.data === 'string') {
+                alert(error.response.data);
+            } else {
+                alert("Erreur lors de l'enregistrement. Veuillez vérifier les informations.");
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -327,9 +331,9 @@ const EtudiantsList = () => {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-semibold text-slate-700 ml-1">Email</label>
+                                    <label className="text-sm font-semibold text-slate-700 ml-1">Email *</label>
                                     <input 
-                                        type="email" name="email"
+                                        type="email" name="email" required
                                         value={formData.email} onChange={handleInputChange}
                                         className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
                                         placeholder="Ex: test@school.com"

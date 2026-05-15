@@ -29,6 +29,8 @@ public class Etudiant {
     private LocalDate dateNaissance;
     private String adresse;
     private String telephone;
+    
+    @Column(unique = true, nullable = false)
     private String email;
 
     @OneToOne
