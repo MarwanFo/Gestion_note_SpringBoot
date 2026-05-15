@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, User, Edit, Trash2, X, Save } from 'lucide-react';
+import { Plus, Search, User, Edit, Trash2, X, Save, Key } from 'lucide-react';
 import api from '../../api/axios';
 
 const EtudiantsList = () => {
@@ -73,7 +73,7 @@ const EtudiantsList = () => {
         setIsModalOpen(true);
     };
 
-    const [successModal, setSuccessModal] = useState({ isOpen: false, username: '', password: '' });
+    const [successModal, setSuccessModal] = useState({ isOpen: false, username: '', password: '', title: '' });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -92,7 +92,8 @@ const EtudiantsList = () => {
                 setSuccessModal({
                     isOpen: true,
                     username: response.data.email,
-                    password: response.data.generatedPassword
+                    password: response.data.generatedPassword,
+                    title: 'Compte Créé !'
                 });
                 setFormData({ cne: '', nom: '', prenom: '', telephone: '', dateNaissance: '', adresse: '', email: '', filiere: { id: '' } });
                 fetchEtudiants();
@@ -115,6 +116,26 @@ const EtudiantsList = () => {
                 fetchEtudiants();
             } catch (error) {
                 alert("Erreur lors de la suppression.");
+            }
+        }
+    };
+
+    const handleResetPassword = async (id) => {
+        if (window.confirm("Voulez-vous générer un nouveau mot de passe pour cet étudiant ? L'ancien mot de passe sera écrasé.")) {
+            try {
+                const response = await api.post(`/etudiants/${id}/reset-password`);
+                setSuccessModal({
+                    isOpen: true,
+                    username: response.data.email,
+                    password: response.data.generatedPassword,
+                    title: 'Mot de passe réinitialisé !'
+                });
+            } catch (error) {
+                if (error.response && error.response.data && typeof error.response.data === 'string') {
+                    alert(error.response.data);
+                } else {
+                    alert("Erreur lors de la réinitialisation du mot de passe.");
+                }
             }
         }
     };
@@ -195,6 +216,13 @@ const EtudiantsList = () => {
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 <button 
+                                                    onClick={() => handleResetPassword(etudiant.id)}
+                                                    title="Réinitialiser le mot de passe"
+                                                    className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                                                >
+                                                    <Key className="w-4 h-4" />
+                                                </button>
+                                                <button 
                                                     onClick={() => handleEdit(etudiant)}
                                                     className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                 >
@@ -223,7 +251,7 @@ const EtudiantsList = () => {
                         <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Save className="w-8 h-8" />
                         </div>
-                        <h2 className="text-2xl font-extrabold text-slate-900 mb-2">Compte Créé !</h2>
+                        <h2 className="text-2xl font-extrabold text-slate-900 mb-2">{successModal.title || 'Succès'}</h2>
                         <p className="text-slate-500 text-sm mb-6">L'étudiant peut maintenant se connecter avec ces identifiants sécurisés.</p>
                         
                         <div className="bg-slate-50 rounded-2xl p-4 mb-6 border border-slate-100 text-left space-y-3">
@@ -239,7 +267,7 @@ const EtudiantsList = () => {
                         </div>
 
                         <button 
-                            onClick={() => setSuccessModal({ isOpen: false, username: '', password: '' })}
+                            onClick={() => setSuccessModal({ isOpen: false, username: '', password: '', title: '' })}
                             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20"
                         >
                             C'est noté !

@@ -123,6 +123,24 @@ public class EtudiantController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
+    @PostMapping("/{id}/reset-password")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> resetPassword(@PathVariable Long id) {
+        return etudiantRepository.findById(id).map(etudiant -> {
+            if (etudiant.getUser() == null) {
+                return ResponseEntity.badRequest().body("Cet étudiant n'a pas de compte utilisateur lié.");
+            }
+            
+            String newPassword = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase() + "x$";
+            com.school.gestionnotes.entities.User user = etudiant.getUser();
+            user.setPassword(passwordEncoder.encode(newPassword));
+            userRepository.save(user);
+            
+            etudiant.setGeneratedPassword(newPassword);
+            return ResponseEntity.ok(etudiant);
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/me")
     @PreAuthorize("hasRole('ETUDIANT')")
     public ResponseEntity<Etudiant> getMyProfile(java.security.Principal principal) {
