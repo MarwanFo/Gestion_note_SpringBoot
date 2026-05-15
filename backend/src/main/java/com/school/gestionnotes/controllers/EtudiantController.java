@@ -25,9 +25,42 @@ public class EtudiantController {
         return etudiantRepository.findAll();
     }
 
+    @Autowired
+    private com.school.gestionnotes.repositories.UserRepository userRepository;
+
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public Etudiant createEtudiant(@RequestBody Etudiant etudiant) {
+        // Generate a user account for the student if CNE is provided
+        if (etudiant.getCne() != null && !etudiant.getCne().trim().isEmpty()) {
+            String generatedUsername = etudiant.getCne().trim();
+            String generatedPassword = etudiant.getCne().trim(); // Initial password is the CNE
+            
+            if (!userRepository.existsByUsername(generatedUsername)) {
+                com.school.gestionnotes.entities.User newUser = com.school.gestionnotes.entities.User.builder()
+                        .username(generatedUsername)
+                        .email(etudiant.getEmail() != null ? etudiant.getEmail() : generatedUsername + "@school.com")
+                        .password(passwordEncoder.encode(generatedPassword))
+                        .role(com.school.gestionnotes.enums.Role.ROLE_ETUDIANT)
+                        .active(true)
+                        .build();
+                userRepository.save(newUser);
+                etudiant.setUser(newUser);
+            } else {
+                // If the user already exists, just link it
+                userRepository.findByUsername(generatedUsername).ifPresent(etudiant::setUser);
+            }
+        }
+
+        if (etudiant.getFiliere() != null && etudiant.getFiliere().getId() != null) {
+            filiereRepository.findById(etudiant.getFiliere().getId()).ifPresent(etudiant::setFiliere);
+        } else {
+            etudiant.setFiliere(null);
+        }
+
         return etudiantRepository.save(etudiant);
     }
 

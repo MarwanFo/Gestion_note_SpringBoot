@@ -217,6 +217,11 @@ const EtudiantsList = () => {
                         </div>
                         
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                            {!isEditing && (
+                                <div className="bg-blue-50 border border-blue-100 text-blue-700 px-4 py-3 rounded-xl text-sm font-medium">
+                                    💡 Un compte utilisateur sera automatiquement créé pour cet étudiant. Le nom d'utilisateur et le mot de passe initiaux correspondront au <strong>CNE</strong>.
+                                </div>
+                            )}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                     <label className="text-sm font-semibold text-slate-700 ml-1">Nom *</label>
