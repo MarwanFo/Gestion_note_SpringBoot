@@ -79,9 +79,9 @@ public class DataInitializer implements CommandLineRunner {
 
             // Create some test subjects (Matieres) and Grades (Notes) to see them in the UI
             if (matiereRepository.count() == 0) {
-                Matiere math = Matiere.builder().code("MATH101").libelle("Algèbre Linéaire").coefficient(3).build();
-                Matiere info = Matiere.builder().code("INFO101").libelle("Programmation Java").coefficient(4).build();
-                Matiere reseau = Matiere.builder().code("RES101").libelle("Réseaux Informatiques").coefficient(2).build();
+                Matiere math = Matiere.builder().code("MATH101").libelle("Algèbre Linéaire").coefficient(3.0).build();
+                Matiere info = Matiere.builder().code("INFO101").libelle("Programmation Java").coefficient(4.0).build();
+                Matiere reseau = Matiere.builder().code("RES101").libelle("Réseaux Informatiques").coefficient(2.0).build();
                 matiereRepository.save(math);
                 matiereRepository.save(info);
                 matiereRepository.save(reseau);
