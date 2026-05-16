@@ -99,7 +99,7 @@ const EtudiantsList = () => {
                 setIsModalOpen(false);
                 setSuccessModal({
                     isOpen: true,
-                    username: response.data.email,
+                    username: response.data.user?.username || response.data.email,
                     password: response.data.generatedPassword,
                     title: 'Compte Créé !'
                 });
@@ -154,7 +154,7 @@ const EtudiantsList = () => {
             setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null, isDestructive: false });
             setSuccessModal({
                 isOpen: true,
-                username: response.data.email,
+                username: response.data.user?.username || response.data.email,
                 password: response.data.generatedPassword,
                 title: 'Mot de passe réinitialisé !'
             });
