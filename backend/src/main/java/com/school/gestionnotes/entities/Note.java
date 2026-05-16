@@ -25,7 +25,7 @@ public class Note {
 
     @ManyToOne
     @JoinColumn(name = "etudiant_id")
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY)
     private Etudiant etudiant;
 
     @ManyToOne
