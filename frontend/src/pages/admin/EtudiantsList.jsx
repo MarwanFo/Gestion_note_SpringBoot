@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, User, Edit, Trash2, X, Save, Key, AlertTriangle } from 'lucide-react';
+import { Plus, Search, User, Edit, Trash2, X, Save, Key, AlertTriangle, Copy, Check } from 'lucide-react';
 import api from '../../api/axios';
 
 const EtudiantsList = () => {
@@ -75,6 +75,13 @@ const EtudiantsList = () => {
 
     const [successModal, setSuccessModal] = useState({ isOpen: false, username: '', password: '', title: '' });
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null, isDestructive: false });
+    const [copiedField, setCopiedField] = useState(null);
+
+    const handleCopy = (text, field) => {
+        navigator.clipboard.writeText(text);
+        setCopiedField(field);
+        setTimeout(() => setCopiedField(null), 2000);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -276,14 +283,32 @@ const EtudiantsList = () => {
                         <p className="text-slate-500 text-sm mb-6">L'étudiant peut maintenant se connecter avec ces identifiants sécurisés.</p>
                         
                         <div className="bg-slate-50 rounded-2xl p-4 mb-6 border border-slate-100 text-left space-y-3">
-                            <div>
-                                <p className="text-xs font-bold text-slate-400 uppercase">Email / Utilisateur</p>
-                                <p className="font-mono text-slate-900 font-bold select-all">{successModal.username}</p>
+                            <div className="flex justify-between items-center gap-4">
+                                <div className="flex-1 overflow-hidden">
+                                    <p className="text-xs font-bold text-slate-400 uppercase">Email / Utilisateur</p>
+                                    <p className="font-mono text-slate-900 font-bold select-all truncate">{successModal.username}</p>
+                                </div>
+                                <button 
+                                    onClick={() => handleCopy(successModal.username, 'username')} 
+                                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 bg-white rounded-xl border border-slate-200 shadow-sm transition-all"
+                                    title="Copier l'utilisateur"
+                                >
+                                    {copiedField === 'username' ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                                </button>
                             </div>
                             <div className="h-px bg-slate-200" />
-                            <div>
-                                <p className="text-xs font-bold text-slate-400 uppercase">Mot de passe</p>
-                                <p className="font-mono text-blue-600 font-black text-lg select-all tracking-wider">{successModal.password}</p>
+                            <div className="flex justify-between items-center gap-4">
+                                <div className="flex-1 overflow-hidden">
+                                    <p className="text-xs font-bold text-slate-400 uppercase">Mot de passe</p>
+                                    <p className="font-mono text-blue-600 font-black text-lg select-all tracking-wider truncate">{successModal.password}</p>
+                                </div>
+                                <button 
+                                    onClick={() => handleCopy(successModal.password, 'password')} 
+                                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 bg-white rounded-xl border border-slate-200 shadow-sm transition-all"
+                                    title="Copier le mot de passe"
+                                >
+                                    {copiedField === 'password' ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                                </button>
                             </div>
                         </div>
 
