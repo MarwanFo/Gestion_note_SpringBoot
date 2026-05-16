@@ -127,14 +127,35 @@ public class EtudiantController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> resetPassword(@PathVariable Long id) {
         return etudiantRepository.findById(id).map(etudiant -> {
-            if (etudiant.getUser() == null) {
-                return ResponseEntity.badRequest().body("Cet étudiant n'a pas de compte utilisateur lié.");
-            }
-            
             String newPassword = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase() + "x$";
             com.school.gestionnotes.entities.User user = etudiant.getUser();
-            user.setPassword(passwordEncoder.encode(newPassword));
+            
+            if (user == null) {
+                String generatedUsername = etudiant.getEmail();
+                if (generatedUsername == null || generatedUsername.trim().isEmpty()) {
+                    generatedUsername = etudiant.getCne() + "@school.com";
+                    etudiant.setEmail(generatedUsername);
+                }
+                
+                if (userRepository.existsByUsername(generatedUsername)) {
+                    user = userRepository.findByUsername(generatedUsername).get();
+                    user.setPassword(passwordEncoder.encode(newPassword));
+                } else {
+                    user = com.school.gestionnotes.entities.User.builder()
+                            .username(generatedUsername)
+                            .email(generatedUsername)
+                            .password(passwordEncoder.encode(newPassword))
+                            .role(com.school.gestionnotes.enums.Role.ROLE_ETUDIANT)
+                            .active(true)
+                            .build();
+                }
+            } else {
+                user.setPassword(passwordEncoder.encode(newPassword));
+            }
+            
             userRepository.save(user);
+            etudiant.setUser(user);
+            etudiantRepository.save(etudiant);
             
             etudiant.setGeneratedPassword(newPassword);
             return ResponseEntity.ok(etudiant);
