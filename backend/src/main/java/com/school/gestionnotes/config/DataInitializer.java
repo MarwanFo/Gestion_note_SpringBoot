@@ -88,7 +88,7 @@ public class DataInitializer implements CommandLineRunner {
                 System.out.println(">>> Matieres created.");
             }
 
-            if (noteRepository.count() == 0 && etudiantProfile != null) {
+            if (etudiantProfile != null && noteRepository.findByEtudiantId(etudiantProfile.getId()).isEmpty()) {
                 java.util.List<Matiere> matieres = matiereRepository.findAll();
                 if (matieres.size() >= 1) {
                     Note note1 = Note.builder().valeur(15.5).observation("Très bon travail").etudiant(etudiantProfile).matiere(matieres.get(0)).build();
