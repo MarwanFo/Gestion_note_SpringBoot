@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, User, Edit, Trash2, X, Save, Key } from 'lucide-react';
+import { Plus, Search, User, Edit, Trash2, X, Save, Key, AlertTriangle } from 'lucide-react';
 import api from '../../api/axios';
 
 const EtudiantsList = () => {
@@ -74,6 +74,7 @@ const EtudiantsList = () => {
     };
 
     const [successModal, setSuccessModal] = useState({ isOpen: false, username: '', password: '', title: '' });
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null, isDestructive: false });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -109,33 +110,53 @@ const EtudiantsList = () => {
         }
     };
 
+    const promptDelete = (id) => {
+        setConfirmModal({
+            isOpen: true,
+            title: "Supprimer l'étudiant",
+            message: "Voulez-vous vraiment supprimer cet étudiant ? Cette action est irréversible.",
+            isDestructive: true,
+            onConfirm: () => handleDelete(id)
+        });
+    };
+
     const handleDelete = async (id) => {
-        if (window.confirm("Voulez-vous vraiment supprimer cet étudiant ?")) {
-            try {
-                await api.delete(`/etudiants/${id}`);
-                fetchEtudiants();
-            } catch (error) {
-                alert("Erreur lors de la suppression.");
-            }
+        try {
+            await api.delete(`/etudiants/${id}`);
+            fetchEtudiants();
+            setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null, isDestructive: false });
+        } catch (error) {
+            alert("Erreur lors de la suppression.");
+            setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null, isDestructive: false });
         }
     };
 
+    const promptResetPassword = (id) => {
+        setConfirmModal({
+            isOpen: true,
+            title: "Réinitialiser le mot de passe",
+            message: "Voulez-vous générer un nouveau mot de passe pour cet étudiant ? L'ancien mot de passe sera écrasé et définitivement perdu.",
+            isDestructive: false,
+            onConfirm: () => handleResetPassword(id)
+        });
+    };
+
     const handleResetPassword = async (id) => {
-        if (window.confirm("Voulez-vous générer un nouveau mot de passe pour cet étudiant ? L'ancien mot de passe sera écrasé.")) {
-            try {
-                const response = await api.post(`/etudiants/${id}/reset-password`);
-                setSuccessModal({
-                    isOpen: true,
-                    username: response.data.email,
-                    password: response.data.generatedPassword,
-                    title: 'Mot de passe réinitialisé !'
-                });
-            } catch (error) {
-                if (error.response && error.response.data && typeof error.response.data === 'string') {
-                    alert(error.response.data);
-                } else {
-                    alert("Erreur lors de la réinitialisation du mot de passe.");
-                }
+        try {
+            const response = await api.post(`/etudiants/${id}/reset-password`);
+            setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null, isDestructive: false });
+            setSuccessModal({
+                isOpen: true,
+                username: response.data.email,
+                password: response.data.generatedPassword,
+                title: 'Mot de passe réinitialisé !'
+            });
+        } catch (error) {
+            setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null, isDestructive: false });
+            if (error.response && error.response.data && typeof error.response.data === 'string') {
+                alert(error.response.data);
+            } else {
+                alert("Erreur lors de la réinitialisation du mot de passe.");
             }
         }
     };
@@ -216,7 +237,7 @@ const EtudiantsList = () => {
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 <button 
-                                                    onClick={() => handleResetPassword(etudiant.id)}
+                                                    onClick={() => promptResetPassword(etudiant.id)}
                                                     title="Réinitialiser le mot de passe"
                                                     className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                                                 >
@@ -229,7 +250,7 @@ const EtudiantsList = () => {
                                                     <Edit className="w-4 h-4" />
                                                 </button>
                                                 <button 
-                                                    onClick={() => handleDelete(etudiant.id)}
+                                                    onClick={() => promptDelete(etudiant.id)}
                                                     className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
@@ -402,6 +423,34 @@ const EtudiantsList = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Custom Confirm Modal */}
+            {confirmModal.isOpen && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 text-center p-8">
+                        <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${confirmModal.isDestructive ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
+                            <AlertTriangle className="w-8 h-8" />
+                        </div>
+                        <h2 className="text-xl font-extrabold text-slate-900 mb-2">{confirmModal.title}</h2>
+                        <p className="text-slate-500 text-sm mb-8">{confirmModal.message}</p>
+                        
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null, isDestructive: false })}
+                                className="flex-1 py-3 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all"
+                            >
+                                Annuler
+                            </button>
+                            <button 
+                                onClick={confirmModal.onConfirm}
+                                className={`flex-1 py-3 rounded-xl font-bold text-white transition-all shadow-lg ${confirmModal.isDestructive ? 'bg-red-600 hover:bg-red-700 shadow-red-600/20' : 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20'}`}
+                            >
+                                Confirmer
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
