@@ -45,7 +45,7 @@ const Login = () => {
 
                 <form onSubmit={handleLogin} className="space-y-6">
                     <div className="space-y-2">
-                        <label className="text-sm font-semibold text-slate-700 ml-1">Utilisateur</label>
+                        <label className="text-sm font-semibold text-slate-700 ml-1">Email / Utilisateur</label>
                         <div className="relative group">
                             <div className="absolute left-4 top-1/2 -translate-y-1/2 transition-colors group-focus-within:text-blue-600 text-slate-400">
                                 <User className="w-5 h-5" />
@@ -55,7 +55,7 @@ const Login = () => {
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600/20 transition-all"
-                                placeholder="Nom d'utilisateur"
+                                placeholder="Email ou Nom d'utilisateur"
                                 required
                             />
                         </div>
