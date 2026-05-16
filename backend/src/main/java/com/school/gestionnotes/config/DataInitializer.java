@@ -85,19 +85,24 @@ public class DataInitializer implements CommandLineRunner {
                 matiereRepository.save(math);
                 matiereRepository.save(info);
                 matiereRepository.save(reseau);
-
                 System.out.println(">>> Matieres created.");
+            }
 
-                if (etudiantProfile != null) {
-                    Note note1 = Note.builder().valeur(15.5).observation("Très bon travail").etudiant(etudiantProfile).matiere(math).build();
-                    Note note2 = Note.builder().valeur(18.0).observation("Excellent").etudiant(etudiantProfile).matiere(info).build();
-                    Note note3 = Note.builder().valeur(9.0).observation("Doit faire plus d'efforts").etudiant(etudiantProfile).matiere(reseau).build();
-                    
+            if (noteRepository.count() == 0 && etudiantProfile != null) {
+                java.util.List<Matiere> matieres = matiereRepository.findAll();
+                if (matieres.size() >= 1) {
+                    Note note1 = Note.builder().valeur(15.5).observation("Très bon travail").etudiant(etudiantProfile).matiere(matieres.get(0)).build();
                     noteRepository.save(note1);
-                    noteRepository.save(note2);
-                    noteRepository.save(note3);
-                    System.out.println(">>> Notes created for student1.");
                 }
+                if (matieres.size() >= 2) {
+                    Note note2 = Note.builder().valeur(18.0).observation("Excellent").etudiant(etudiantProfile).matiere(matieres.get(1)).build();
+                    noteRepository.save(note2);
+                }
+                if (matieres.size() >= 3) {
+                    Note note3 = Note.builder().valeur(9.0).observation("Doit faire plus d'efforts").etudiant(etudiantProfile).matiere(matieres.get(2)).build();
+                    noteRepository.save(note3);
+                }
+                System.out.println(">>> Notes created for student1.");
             }
         } catch (Exception e) {
             System.err.println(">>> Admin initialization skipped: " + e.getMessage());
