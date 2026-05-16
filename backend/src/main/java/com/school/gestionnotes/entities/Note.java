@@ -25,6 +25,7 @@ public class Note {
 
     @ManyToOne
     @JoinColumn(name = "etudiant_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Etudiant etudiant;
 
     @ManyToOne
