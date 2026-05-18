@@ -25,6 +25,9 @@ public class Professeur {
     @Column(nullable = false)
     private String prenom;
 
+    @Column(unique = true, nullable = false)
+    private String email;
+
     private String grade;
 
     @OneToOne

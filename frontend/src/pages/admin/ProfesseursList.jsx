@@ -15,6 +15,7 @@ const ProfesseursList = () => {
         matricule: '', 
         nom: '', 
         prenom: '', 
+        email: '',
         grade: '', 
         filiere: { id: '' } 
     });
@@ -69,6 +70,7 @@ const ProfesseursList = () => {
             matricule: prof.matricule, 
             nom: prof.nom, 
             prenom: prof.prenom, 
+            email: prof.email || '',
             grade: prof.grade, 
             filiere: { id: prof.filiere?.id || '' } 
         });
@@ -84,29 +86,24 @@ const ProfesseursList = () => {
             if (isEditing) {
                 await api.put(`/professeurs/${selectedId}`, formData);
                 setIsModalOpen(false);
-                setFormData({ matricule: '', nom: '', prenom: '', grade: '', filiere: { id: '' } });
-                setIsEditing(false);
-                setSelectedId(null);
-                fetchProfesseurs();
-            } else {
-                const response = await api.post('/professeurs', formData);
-                setIsModalOpen(false);
-                
                 if (response?.data?.generatedPassword) {
-                    const username = "prof_" + formData.matricule.toLowerCase();
                     setSuccessModal({
                         isOpen: true,
-                        username: username,
+                        username: response.data.user?.username || response.data.email,
                         password: response.data.generatedPassword,
                         title: 'Compte Professeur Créé !'
                     });
                 }
                 
-                setFormData({ matricule: '', nom: '', prenom: '', grade: '', filiere: { id: '' } });
+                setFormData({ matricule: '', nom: '', prenom: '', email: '', grade: '', filiere: { id: '' } });
                 fetchProfesseurs();
             }
         } catch (error) {
-            alert("Erreur lors de l'enregistrement.");
+            if (error.response && error.response.data && typeof error.response.data === 'string') {
+                alert(error.response.data);
+            } else {
+                alert("Erreur lors de l'enregistrement. Vérifiez les informations.");
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -148,13 +145,10 @@ const ProfesseursList = () => {
             const response = await api.post(`/professeurs/${id}/reset-password`);
             setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null, isDestructive: false });
             
-            const newPass = response.data.newPassword;
-            // Provide a mock username for display in the modal since we don't fetch it explicitly here, 
-            // but we can generate what it should be based on standard format.
-            // Or just leave username blank and only show password.
+            const newPass = response.data.generatedPassword;
             setSuccessModal({
                 isOpen: true,
-                username: `Pr. ${nom} ${prenom}`,
+                username: response.data.user?.username || response.data.email,
                 password: newPass,
                 title: 'Mot de passe réinitialisé !'
             });
@@ -212,7 +206,10 @@ const ProfesseursList = () => {
                                                 <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
                                                     <User className="w-5 h-5" />
                                                 </div>
-                                                <p className="font-bold text-slate-900">{prof.nom} {prof.prenom}</p>
+                                                <div>
+                                                    <p className="font-bold text-slate-900">{prof.nom} {prof.prenom}</p>
+                                                    <p className="text-xs text-slate-500">{prof.email || prof.user?.email || "Pas d'email"}</p>
+                                                </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 font-medium">{prof.matricule}</td>
@@ -258,12 +255,18 @@ const ProfesseursList = () => {
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             {!isEditing && (
                                 <div className="bg-indigo-50 border border-indigo-100 text-indigo-700 px-4 py-3 rounded-xl text-sm font-medium">
-                                    💡 Un compte sécurisé sera généré. Le <strong>Matricule</strong> servira de nom d'utilisateur.
+                                    💡 Un compte sécurisé sera généré. Le <strong>Mail</strong> servira de nom d'utilisateur.
                                 </div>
                             )}
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-semibold text-slate-700 ml-1">Matricule *</label>
-                                <input type="text" name="matricule" required value={formData.matricule} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all" placeholder="Ex: P12345" />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-semibold text-slate-700 ml-1">Matricule *</label>
+                                    <input type="text" name="matricule" required value={formData.matricule} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all" placeholder="Ex: P12345" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-semibold text-slate-700 ml-1">Email *</label>
+                                    <input type="email" name="email" required value={formData.email} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all" placeholder="Ex: prof@school.com" />
+                                </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
