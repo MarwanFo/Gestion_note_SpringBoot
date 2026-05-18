@@ -86,6 +86,14 @@ const ProfesseursList = () => {
             if (isEditing) {
                 await api.put(`/professeurs/${selectedId}`, formData);
                 setIsModalOpen(false);
+                setFormData({ matricule: '', nom: '', prenom: '', email: '', grade: '', filiere: { id: '' } });
+                setIsEditing(false);
+                setSelectedId(null);
+                fetchProfesseurs();
+            } else {
+                const response = await api.post('/professeurs', formData);
+                setIsModalOpen(false);
+                
                 if (response?.data?.generatedPassword) {
                     setSuccessModal({
                         isOpen: true,
