@@ -142,34 +142,77 @@ const MesNotes = () => {
                         <p className="text-slate-500">Vos professeurs n'ont pas encore saisi vos notes.</p>
                     </div>
                 ) : (
-                    notes.map((note) => (
-                        <div key={note.id} className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
-                            <div className={`absolute top-0 left-0 w-1.5 h-full ${note.valeur >= 10 ? 'bg-green-500' : 'bg-red-500'}`} />
-                            
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="bg-blue-50 p-3 rounded-xl text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                    <BookOpen className="w-6 h-6" />
+                    notes.map((note) => {
+                        const nCc1 = note.cc1;
+                        const nCc2 = note.cc2;
+                        const nExamen = note.examen;
+                        const nRattrapage = note.rattrapage;
+                        
+                        let ccAvg = 0;
+                        let ccCount = 0;
+                        if (nCc1 !== null && nCc1 !== undefined) { ccAvg += nCc1; ccCount++; }
+                        if (nCc2 !== null && nCc2 !== undefined) { ccAvg += nCc2; ccCount++; }
+                        ccAvg = ccCount > 0 ? (ccAvg / ccCount) : 0;
+
+                        const initialAverage = (ccAvg * 0.25) + ((nExamen === null || nExamen === undefined ? 0 : nExamen) * 0.75);
+                        const isRattrapageActive = nRattrapage !== null && nRattrapage !== undefined;
+
+                        return (
+                            <div key={note.id} className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
+                                <div className={`absolute top-0 left-0 w-1.5 h-full ${note.valeur >= 10 ? 'bg-green-500' : 'bg-red-500'}`} />
+                                
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="bg-blue-50 p-3 rounded-xl text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                        <BookOpen className="w-6 h-6" />
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Note Finale</span>
+                                        <p className={`text-2xl font-black ${note.valeur >= 10 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {note.valeur.toFixed(2)}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="text-right">
-                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Note</span>
-                                    <p className={`text-2xl font-black ${note.valeur >= 10 ? 'text-green-600' : 'text-red-600'}`}>
-                                        {note.valeur}
-                                    </p>
+                                
+                                <h3 className="text-lg font-bold text-slate-900 mb-1">{note.matiere?.libelle}</h3>
+                                <p className="text-sm font-semibold text-slate-500 bg-slate-50 inline-block px-3 py-1 rounded-lg mb-4">
+                                    {note.matiere?.code}
+                                </p>
+                                
+                                <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-slate-600 bg-slate-50/50 p-3 rounded-2xl border border-slate-100">
+                                    <div className="flex justify-between p-1 bg-white rounded-lg px-2">
+                                        <span>CC1:</span>
+                                        <span className="font-extrabold text-slate-800">{nCc1 !== null && nCc1 !== undefined ? `${nCc1}/20` : '-'}</span>
+                                    </div>
+                                    <div className="flex justify-between p-1 bg-white rounded-lg px-2">
+                                        <span>CC2:</span>
+                                        <span className="font-extrabold text-slate-800">{nCc2 !== null && nCc2 !== undefined ? `${nCc2}/20` : '-'}</span>
+                                    </div>
+                                    <div className="flex justify-between p-1 bg-white rounded-lg px-2 col-span-2">
+                                        <span>Examen Final:</span>
+                                        <span className="font-extrabold text-slate-800">{nExamen !== null && nExamen !== undefined ? `${nExamen}/20` : '-'}</span>
+                                    </div>
+                                    <div className="flex justify-between p-1 bg-white rounded-lg px-2 col-span-2">
+                                        <span>Moyenne Initiale:</span>
+                                        <span className={`font-extrabold ${initialAverage >= 10 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {initialAverage.toFixed(2)}/20
+                                        </span>
+                                    </div>
+                                    {isRattrapageActive && (
+                                        <div className="flex justify-between p-1 bg-amber-50 rounded-lg px-2 col-span-2 text-amber-800 border border-amber-100">
+                                            <span>Rattrapage:</span>
+                                            <span className="font-black">{nRattrapage}/20</span>
+                                        </div>
+                                    )}
                                 </div>
+                                
+                                {note.observation && (
+                                    <div className="mt-4 pt-4 border-t border-slate-100">
+                                        <p className="text-sm text-slate-600 italic">"{note.observation}"</p>
+                                    </div>
+                                )}
                             </div>
-                            
-                            <h3 className="text-lg font-bold text-slate-900 mb-1">{note.matiere?.libelle}</h3>
-                            <p className="text-sm font-semibold text-slate-500 bg-slate-50 inline-block px-3 py-1 rounded-lg">
-                                {note.matiere?.code}
-                            </p>
-                            
-                            {note.observation && (
-                                <div className="mt-4 pt-4 border-t border-slate-100">
-                                    <p className="text-sm text-slate-600 italic">"{note.observation}"</p>
-                                </div>
-                            )}
-                        </div>
-                    ))
+                        );
+                    })
                 )}
             </div>
         </div>

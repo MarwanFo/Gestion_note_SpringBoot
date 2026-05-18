@@ -39,11 +39,16 @@ public class NoteController {
         
         if (existing.isPresent()) {
             Note n = existing.get();
-            n.setValeur(note.getValeur());
+            n.setCc1(note.getCc1());
+            n.setCc2(note.getCc2());
+            n.setExamen(note.getExamen());
+            n.setRattrapage(note.getRattrapage());
             n.setObservation(note.getObservation());
+            n.calculateValeur();
             return noteRepository.save(n);
         }
         
+        note.calculateValeur();
         return noteRepository.save(note);
     }
     @Autowired
