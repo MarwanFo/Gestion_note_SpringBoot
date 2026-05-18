@@ -58,7 +58,7 @@ public class ProfesseurController {
                 .username(username)
                 .email(email)
                 .password(passwordEncoder.encode(plainPassword))
-                .role(com.school.gestionnotes.entities.Role.ROLE_PROF)
+                .role(com.school.gestionnotes.enums.Role.ROLE_PROF)
                 .active(true)
                 .build();
                 
