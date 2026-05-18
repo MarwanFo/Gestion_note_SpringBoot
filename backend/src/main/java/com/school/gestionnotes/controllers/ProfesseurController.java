@@ -35,6 +35,16 @@ public class ProfesseurController {
         return professeurRepository.findAll();
     }
 
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('PROF')")
+    public ResponseEntity<Professeur> getMyProfile(java.security.Principal principal) {
+        return professeurRepository.findAll().stream()
+                .filter(p -> p.getUser() != null && p.getUser().getUsername().equals(principal.getName()))
+                .findFirst()
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public Professeur createProfesseur(@RequestBody Professeur professeur) {
