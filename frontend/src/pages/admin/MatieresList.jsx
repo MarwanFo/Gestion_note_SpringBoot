@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Book, Edit, Trash2, X, Save } from 'lucide-react';
+import { Plus, Search, Book, Edit, Trash2, X, Save, AlertTriangle } from 'lucide-react';
 import api from '../../api/axios';
 
 const MatieresList = () => {
@@ -18,6 +18,8 @@ const MatieresList = () => {
         nbrHeures: '', 
         filiere: { id: '' } 
     });
+    
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null, isDestructive: false });
 
     useEffect(() => {
         fetchMatieres();
@@ -88,14 +90,24 @@ const MatieresList = () => {
         }
     };
 
+    const promptDelete = (id) => {
+        setConfirmModal({
+            isOpen: true,
+            title: "Supprimer la matière",
+            message: "Voulez-vous vraiment supprimer cette matière ?",
+            isDestructive: true,
+            onConfirm: () => handleDelete(id)
+        });
+    };
+
     const handleDelete = async (id) => {
-        if (window.confirm("Voulez-vous vraiment supprimer cette matière ?")) {
-            try {
-                await api.delete(`/matieres/${id}`);
-                fetchMatieres();
-            } catch (error) {
-                alert("Erreur lors de la suppression.");
-            }
+        try {
+            await api.delete(`/matieres/${id}`);
+            fetchMatieres();
+            setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null, isDestructive: false });
+        } catch (error) {
+            alert("Erreur lors de la suppression.");
+            setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null, isDestructive: false });
         }
     };
 
@@ -161,8 +173,8 @@ const MatieresList = () => {
                                             <div className="flex items-center justify-end gap-2">
                                                 <button onClick={() => handleEdit(matiere)} className="p-2 text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-lg"><Edit className="w-4 h-4" /></button>
                                                 <button 
-                                                    onClick={() => handleDelete(matiere.id)}
-                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                                                    onClick={() => promptDelete(matiere.id)}
+                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
@@ -210,12 +222,47 @@ const MatieresList = () => {
                                 </div>
                             </div>
                             <div className="pt-4 mt-6 border-t border-slate-100 flex items-center justify-end gap-3">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 text-slate-600 font-bold hover:bg-slate-100 rounded-xl">Annuler</button>
-                                <button type="submit" disabled={isSubmitting} className="bg-green-600 hover:bg-green-700 text-white px-8 py-2.5 rounded-xl font-bold flex items-center gap-2">
-                                    {isSubmitting ? 'Enregistrement...' : (isEditing ? 'Mettre à jour' : 'Enregistrer')}
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-all">Annuler</button>
+                                <button type="submit" disabled={isSubmitting} className="bg-green-600 hover:bg-green-700 text-white px-8 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-green-600/20 flex items-center gap-2">
+                                    {isSubmitting ? (
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <>
+                                            <Save className="w-4 h-4" />
+                                            {isEditing ? 'Mettre à jour' : 'Enregistrer'}
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Custom Confirm Modal */}
+            {confirmModal.isOpen && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 text-center p-8">
+                        <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${confirmModal.isDestructive ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
+                            <AlertTriangle className="w-8 h-8" />
+                        </div>
+                        <h2 className="text-xl font-extrabold text-slate-900 mb-2">{confirmModal.title}</h2>
+                        <p className="text-slate-500 text-sm mb-8">{confirmModal.message}</p>
+                        
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null, isDestructive: false })}
+                                className="flex-1 py-3 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all"
+                            >
+                                Annuler
+                            </button>
+                            <button 
+                                onClick={confirmModal.onConfirm}
+                                className={`flex-1 py-3 rounded-xl font-bold text-white transition-all shadow-lg ${confirmModal.isDestructive ? 'bg-red-600 hover:bg-red-700 shadow-red-600/20' : 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20'}`}
+                            >
+                                Confirmer
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
