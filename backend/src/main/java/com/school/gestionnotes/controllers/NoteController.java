@@ -5,6 +5,8 @@ import com.school.gestionnotes.repositories.NoteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.school.gestionnotes.services.AiRoadmapService;
+import java.util.Collections;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,6 +18,9 @@ public class NoteController {
 
     @Autowired
     private NoteRepository noteRepository;
+
+    @Autowired
+    private AiRoadmapService aiRoadmapService;
 
     @GetMapping("/matiere/{matiereId}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('PROF')")
@@ -49,6 +54,17 @@ public class NoteController {
     public ResponseEntity<List<Note>> getMyNotes(java.security.Principal principal) {
         return etudiantRepository.findByUserUsername(principal.getName())
                 .map(etudiant -> ResponseEntity.ok(noteRepository.findByEtudiantId(etudiant.getId())))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/mes-notes/roadmap")
+    @PreAuthorize("hasRole('ETUDIANT')")
+    public ResponseEntity<?> getMyAiRoadmap(java.security.Principal principal) {
+        return etudiantRepository.findByUserUsername(principal.getName())
+                .map(etudiant -> {
+                    String roadmap = aiRoadmapService.generateRoadmapForStudent(etudiant.getId());
+                    return ResponseEntity.ok(Collections.singletonMap("roadmap", roadmap));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 }
