@@ -6,7 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.security.crypto.password.PasswordEncoder;
+import com.school.gestionnotes.entities.User;
+import com.school.gestionnotes.repositories.UserRepository;
+import java.util.UUID;
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -19,6 +23,12 @@ public class ProfesseurController {
     @Autowired
     private com.school.gestionnotes.repositories.FiliereRepository filiereRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public List<Professeur> getAllProfesseurs() {
@@ -28,7 +38,42 @@ public class ProfesseurController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public Professeur createProfesseur(@RequestBody Professeur professeur) {
-        return professeurRepository.save(professeur);
+        String email = professeur.getNom().toLowerCase() + "." + professeur.getPrenom().toLowerCase() + "@school.com";
+        String username = "prof_" + professeur.getMatricule().toLowerCase();
+        
+        // Generate random 8 character password
+        String plainPassword = UUID.randomUUID().toString().substring(0, 8);
+        
+        User user = User.builder()
+                .username(username)
+                .email(email)
+                .password(passwordEncoder.encode(plainPassword))
+                .role(com.school.gestionnotes.entities.Role.ROLE_PROF)
+                .active(true)
+                .build();
+                
+        user = userRepository.save(user);
+        professeur.setUser(user);
+        
+        Professeur savedProf = professeurRepository.save(professeur);
+        savedProf.setGeneratedPassword(plainPassword); // Send password back once
+        
+        return savedProf;
+    }
+
+    @PostMapping("/{id}/reset-password")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> resetPassword(@PathVariable Long id) {
+        return professeurRepository.findById(id).map(prof -> {
+            if (prof.getUser() != null) {
+                String newPassword = UUID.randomUUID().toString().substring(0, 8);
+                User user = prof.getUser();
+                user.setPassword(passwordEncoder.encode(newPassword));
+                userRepository.save(user);
+                return ResponseEntity.ok(Collections.singletonMap("newPassword", newPassword));
+            }
+            return ResponseEntity.badRequest().body("Le professeur n'a pas de compte utilisateur.");
+        }).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")

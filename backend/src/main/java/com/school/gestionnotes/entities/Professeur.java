@@ -38,4 +38,7 @@ public class Professeur {
     @OneToMany(mappedBy = "professeur")
     @com.fasterxml.jackson.annotation.JsonIgnore
     private List<Note> notes;
+
+    @Transient
+    private String generatedPassword;
 }

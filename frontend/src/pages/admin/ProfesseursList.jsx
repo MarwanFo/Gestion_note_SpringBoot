@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, User, Edit, Trash2, X, Save } from 'lucide-react';
+import { Plus, Search, User, Edit, Trash2, X, Save, RefreshCw, Copy } from 'lucide-react';
 import api from '../../api/axios';
 
 const ProfesseursList = () => {
@@ -71,12 +71,25 @@ const ProfesseursList = () => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
+            let response;
             if (isEditing) {
                 await api.put(`/professeurs/${selectedId}`, formData);
             } else {
-                await api.post('/professeurs', formData);
+                response = await api.post('/professeurs', formData);
             }
             setIsModalOpen(false);
+            
+            if (!isEditing && response?.data?.generatedPassword) {
+                const email = formData.nom.toLowerCase() + "." + formData.prenom.toLowerCase() + "@school.com";
+                const username = "prof_" + formData.matricule.toLowerCase();
+                
+                const credsText = `Email: ${email}\nLogin: ${username}\nMot de passe: ${response.data.generatedPassword}`;
+                
+                // Show a nice alert and copy to clipboard
+                navigator.clipboard.writeText(credsText).catch(() => {});
+                alert(`✅ COMPTE CRÉÉ AVEC SUCCÈS !\n\n${credsText}\n\n(Ces informations ont été copiées dans votre presse-papier)`);
+            }
+            
             setFormData({ matricule: '', nom: '', prenom: '', grade: '', filiere: { id: '' } });
             setIsEditing(false);
             setSelectedId(null);
@@ -95,6 +108,19 @@ const ProfesseursList = () => {
                 fetchProfesseurs();
             } catch (error) {
                 alert("Erreur lors de la suppression.");
+            }
+        }
+    };
+
+    const handleResetPassword = async (id, nom, prenom) => {
+        if (window.confirm(`Générer un nouveau mot de passe pour le Pr. ${nom} ${prenom} ?`)) {
+            try {
+                const response = await api.post(`/professeurs/${id}/reset-password`);
+                const newPass = response.data.newPassword;
+                navigator.clipboard.writeText(`Nouveau mot de passe: ${newPass}`).catch(() => {});
+                alert(`✅ MOT DE PASSE RÉINITIALISÉ !\n\nNouveau mot de passe: ${newPass}\n\n(Copié dans le presse-papier)`);
+            } catch (error) {
+                alert("Erreur: Le professeur n'a pas de compte utilisateur lié.");
             }
         }
     };
@@ -155,10 +181,19 @@ const ProfesseursList = () => {
                                         <td className="px-6 py-4">{prof.grade || '-'}</td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <button onClick={() => handleEdit(prof)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"><Edit className="w-4 h-4" /></button>
+                                                <button 
+                                                    onClick={() => handleResetPassword(prof.id, prof.nom, prof.prenom)}
+                                                    title="Réinitialiser le mot de passe"
+                                                    className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                                                >
+                                                    <RefreshCw className="w-4 h-4" />
+                                                </button>
+                                                <button onClick={() => handleEdit(prof)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                                                    <Edit className="w-4 h-4" />
+                                                </button>
                                                 <button 
                                                     onClick={() => handleDelete(prof.id)}
-                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
