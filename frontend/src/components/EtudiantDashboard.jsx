@@ -11,12 +11,48 @@ const EtudiantDashboard = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [profileRes, notesRes] = await Promise.all([
+                const [profileRes, notesRes, matieresRes] = await Promise.all([
                     api.get('/etudiants/me'),
-                    api.get('/notes/mes-notes')
+                    api.get('/notes/mes-notes'),
+                    api.get('/matieres')
                 ]);
-                setProfile(profileRes.data);
-                setNotes(notesRes.data);
+                const studentProfile = profileRes.data;
+                const studentNotes = notesRes.data;
+                
+                // Filter subjects to only keep those of the student's filiere
+                const studentMatieres = matieresRes.data.filter(
+                    m => m.filiere && studentProfile.filiere && m.filiere.id === studentProfile.filiere.id
+                );
+
+                // Build note list: for each student's filiere subject, find if a saved note exists
+                const combinedNotes = studentMatieres.map(matiere => {
+                    const foundNote = studentNotes.find(n => n.matiere && n.matiere.id === matiere.id);
+                    // A note is only considered "published/saisie" if at least one of its primary grades (cc1, cc2, or examen) is not null!
+                    const isActuallySaisie = foundNote && (
+                        foundNote.cc1 !== null || 
+                        foundNote.cc2 !== null || 
+                        foundNote.examen !== null
+                    );
+                    
+                    if (isActuallySaisie) {
+                        return { ...foundNote, isSaisie: true };
+                    } else {
+                        return {
+                            id: `empty-${matiere.id}`,
+                            matiere: matiere,
+                            cc1: null,
+                            cc2: null,
+                            examen: null,
+                            rattrapage: null,
+                            valeur: null,
+                            observation: '',
+                            isSaisie: false
+                        };
+                    }
+                });
+
+                setProfile(studentProfile);
+                setNotes(combinedNotes);
             } catch (error) {
                 console.error('Erreur de chargement:', error);
             } finally {
@@ -34,12 +70,14 @@ const EtudiantDashboard = () => {
         );
     }
 
-    const moyenne = notes.length > 0 
-        ? (notes.reduce((acc, curr) => acc + curr.valeur, 0) / notes.length).toFixed(2)
-        : 0;
+    // Calculate stats using only published grades
+    const savedNotes = notes.filter(n => n.isSaisie && n.valeur !== null);
+    const moyenne = savedNotes.length > 0 
+        ? (savedNotes.reduce((acc, curr) => acc + curr.valeur, 0) / savedNotes.length).toFixed(2)
+        : '0.00';
 
-    const topNote = notes.length > 0 ? Math.max(...notes.map(n => n.valeur)) : 0;
-    const notesValidees = notes.filter(n => n.valeur >= 10).length;
+    const topNote = savedNotes.length > 0 ? Math.max(...savedNotes.map(n => n.valeur)).toFixed(2) : '0.00';
+    const notesValidees = savedNotes.filter(n => n.valeur >= 10).length;
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -121,14 +159,14 @@ const EtudiantDashboard = () => {
                             notes.slice(0, 3).map(note => (
                                 <div key={note.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-blue-100 transition-colors">
                                     <div className="flex items-center gap-4">
-                                        <div className={`w-2 h-10 rounded-full ${note.valeur >= 10 ? 'bg-green-500' : 'bg-red-500'}`} />
+                                        <div className={`w-2 h-10 rounded-full ${note.isSaisie && note.valeur >= 10 ? 'bg-green-500' : note.isSaisie ? 'bg-red-500' : 'bg-slate-300'}`} />
                                         <div>
                                             <p className="font-bold text-slate-900">{note.matiere?.libelle}</p>
                                             <p className="text-xs font-semibold text-slate-500">{note.matiere?.code}</p>
                                         </div>
                                     </div>
-                                    <div className={`text-xl font-black ${note.valeur >= 10 ? 'text-green-600' : 'text-red-600'}`}>
-                                        {note.valeur}
+                                    <div className={`text-xl font-black ${note.isSaisie && note.valeur >= 10 ? 'text-green-600' : note.isSaisie ? 'text-red-600' : 'text-slate-400 font-bold italic text-sm'}`}>
+                                        {note.isSaisie && note.valeur !== null ? note.valeur.toFixed(2) : 'Non saisie'}
                                     </div>
                                 </div>
                             ))

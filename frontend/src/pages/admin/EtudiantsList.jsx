@@ -99,7 +99,7 @@ const EtudiantsList = () => {
                 setIsModalOpen(false);
                 setSuccessModal({
                     isOpen: true,
-                    username: response.data.user?.username || response.data.email,
+                    username: response.data.email,
                     password: response.data.generatedPassword,
                     title: 'Compte Créé !'
                 });
@@ -154,7 +154,7 @@ const EtudiantsList = () => {
             setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null, isDestructive: false });
             setSuccessModal({
                 isOpen: true,
-                username: response.data.user?.username || response.data.email,
+                username: response.data.email,
                 password: response.data.generatedPassword,
                 title: 'Mot de passe réinitialisé !'
             });
@@ -285,13 +285,13 @@ const EtudiantsList = () => {
                         <div className="bg-slate-50 rounded-2xl p-4 mb-6 border border-slate-100 text-left space-y-3">
                             <div className="flex justify-between items-center gap-4">
                                 <div className="flex-1 overflow-hidden">
-                                    <p className="text-xs font-bold text-slate-400 uppercase">Email / Utilisateur</p>
+                                    <p className="text-xs font-bold text-slate-400 uppercase">Email</p>
                                     <p className="font-mono text-slate-900 font-bold select-all truncate">{successModal.username}</p>
                                 </div>
                                 <button 
                                     onClick={() => handleCopy(successModal.username, 'username')} 
                                     className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 bg-white rounded-xl border border-slate-200 shadow-sm transition-all"
-                                    title="Copier l'utilisateur"
+                                    title="Copier l'email"
                                 >
                                     {copiedField === 'username' ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
                                 </button>

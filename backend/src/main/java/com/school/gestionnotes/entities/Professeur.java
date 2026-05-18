@@ -41,6 +41,14 @@ public class Professeur {
         inverseJoinColumns = @JoinColumn(name = "filiere_id")
     )
     private List<Filiere> filieres;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "professeur_matieres",
+        joinColumns = @JoinColumn(name = "professeur_id"),
+        inverseJoinColumns = @JoinColumn(name = "matiere_id")
+    )
+    private List<Matiere> matieres;
     
     @OneToMany(mappedBy = "professeur")
     @com.fasterxml.jackson.annotation.JsonIgnore

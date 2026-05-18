@@ -17,11 +17,47 @@ const MesNotes = () => {
         try {
             // Fetch Profile
             const profileRes = await api.get('/etudiants/me');
-            setProfile(profileRes.data);
+            const studentProfile = profileRes.data;
+            setProfile(studentProfile);
 
             // Fetch Notes
             const notesRes = await api.get('/notes/mes-notes');
-            setNotes(notesRes.data);
+            const studentNotes = notesRes.data;
+
+            // Fetch all Matieres to filter by student's filiere
+            const matieresRes = await api.get('/matieres');
+            const studentMatieres = matieresRes.data.filter(
+                m => m.filiere && studentProfile.filiere && m.filiere.id === studentProfile.filiere.id
+            );
+
+            // Build note list: for each student's filiere subject, find if a saved note exists
+            const combinedNotes = studentMatieres.map(matiere => {
+                const foundNote = studentNotes.find(n => n.matiere && n.matiere.id === matiere.id);
+                // A note is only considered "published/saisie" if at least one of its primary grades (cc1, cc2, or examen) is not null!
+                const isActuallySaisie = foundNote && (
+                    foundNote.cc1 !== null || 
+                    foundNote.cc2 !== null || 
+                    foundNote.examen !== null
+                );
+                
+                if (isActuallySaisie) {
+                    return { ...foundNote, isSaisie: true };
+                } else {
+                    return {
+                        id: `empty-${matiere.id}`,
+                        matiere: matiere,
+                        cc1: null,
+                        cc2: null,
+                        examen: null,
+                        rattrapage: null,
+                        valeur: null,
+                        observation: '',
+                        isSaisie: false
+                    };
+                }
+            });
+
+            setNotes(combinedNotes);
 
             // Fetch AI Roadmap
             api.get('/notes/mes-notes/roadmap')
@@ -68,10 +104,11 @@ const MesNotes = () => {
         });
     };
 
-    // Calculate Average
-    const moyenne = notes.length > 0 
-        ? (notes.reduce((acc, curr) => acc + curr.valeur, 0) / notes.length).toFixed(2)
-        : 0;
+    // Calculate Average only for saved grades
+    const savedNotes = notes.filter(n => n.isSaisie && n.valeur !== null);
+    const moyenne = savedNotes.length > 0 
+        ? (savedNotes.reduce((acc, curr) => acc + curr.valeur, 0) / savedNotes.length).toFixed(2)
+        : '0.00';
 
     if (loading) {
         return <div className="p-8 text-center text-slate-500 font-medium">Chargement de vos données...</div>;
@@ -138,8 +175,8 @@ const MesNotes = () => {
                 {notes.length === 0 ? (
                     <div className="col-span-full bg-white rounded-3xl p-8 text-center border border-slate-100 shadow-sm">
                         <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                        <h3 className="text-lg font-bold text-slate-900">Aucune note disponible</h3>
-                        <p className="text-slate-500">Vos professeurs n'ont pas encore saisi vos notes.</p>
+                        <h3 className="text-lg font-bold text-slate-900">Aucun sujet</h3>
+                        <p className="text-slate-500">Aucun sujet n'est configuré pour votre filière.</p>
                     </div>
                 ) : (
                     notes.map((note) => {
@@ -148,18 +185,23 @@ const MesNotes = () => {
                         const nExamen = note.examen;
                         const nRattrapage = note.rattrapage;
                         
+                        const hasCc1 = nCc1 !== null && nCc1 !== undefined;
+                        const hasCc2 = nCc2 !== null && nCc2 !== undefined;
+                        const hasExamen = nExamen !== null && nExamen !== undefined;
+                        
                         let ccAvg = 0;
                         let ccCount = 0;
-                        if (nCc1 !== null && nCc1 !== undefined) { ccAvg += nCc1; ccCount++; }
-                        if (nCc2 !== null && nCc2 !== undefined) { ccAvg += nCc2; ccCount++; }
+                        if (hasCc1) { ccAvg += nCc1; ccCount++; }
+                        if (hasCc2) { ccAvg += nCc2; ccCount++; }
                         ccAvg = ccCount > 0 ? (ccAvg / ccCount) : 0;
 
-                        const initialAverage = (ccAvg * 0.25) + ((nExamen === null || nExamen === undefined ? 0 : nExamen) * 0.75);
+                        const initialAverage = (ccAvg * 0.25) + ((hasExamen ? nExamen : 0) * 0.75);
+                        const isInitialReady = hasCc1 && hasCc2 && hasExamen;
                         const isRattrapageActive = nRattrapage !== null && nRattrapage !== undefined;
 
                         return (
                             <div key={note.id} className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
-                                <div className={`absolute top-0 left-0 w-1.5 h-full ${note.valeur >= 10 ? 'bg-green-500' : 'bg-red-500'}`} />
+                                <div className={`absolute top-0 left-0 w-1.5 h-full ${note.isSaisie && note.valeur >= 10 ? 'bg-green-500' : note.isSaisie ? 'bg-red-500' : 'bg-slate-300'}`} />
                                 
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="bg-blue-50 p-3 rounded-xl text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
@@ -167,9 +209,13 @@ const MesNotes = () => {
                                     </div>
                                     <div className="text-right">
                                         <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Note Finale</span>
-                                        <p className={`text-2xl font-black ${note.valeur >= 10 ? 'text-green-600' : 'text-red-600'}`}>
-                                            {note.valeur.toFixed(2)}
-                                        </p>
+                                        {note.isSaisie && note.valeur !== null ? (
+                                            <p className={`text-2xl font-black ${note.valeur >= 10 ? 'text-green-600' : 'text-red-600'}`}>
+                                                {note.valeur.toFixed(2)}
+                                            </p>
+                                        ) : (
+                                            <p className="text-sm font-bold text-slate-400 italic mt-1">Non saisie</p>
+                                        )}
                                     </div>
                                 </div>
                                 
@@ -181,23 +227,23 @@ const MesNotes = () => {
                                 <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-slate-600 bg-slate-50/50 p-3 rounded-2xl border border-slate-100">
                                     <div className="flex justify-between p-1 bg-white rounded-lg px-2">
                                         <span>CC1:</span>
-                                        <span className="font-extrabold text-slate-800">{nCc1 !== null && nCc1 !== undefined ? `${nCc1}/20` : '-'}</span>
+                                        <span className="font-extrabold text-slate-800">{note.isSaisie && hasCc1 ? `${nCc1}/20` : '-'}</span>
                                     </div>
                                     <div className="flex justify-between p-1 bg-white rounded-lg px-2">
                                         <span>CC2:</span>
-                                        <span className="font-extrabold text-slate-800">{nCc2 !== null && nCc2 !== undefined ? `${nCc2}/20` : '-'}</span>
+                                        <span className="font-extrabold text-slate-800">{note.isSaisie && hasCc2 ? `${nCc2}/20` : '-'}</span>
                                     </div>
                                     <div className="flex justify-between p-1 bg-white rounded-lg px-2 col-span-2">
                                         <span>Examen Final:</span>
-                                        <span className="font-extrabold text-slate-800">{nExamen !== null && nExamen !== undefined ? `${nExamen}/20` : '-'}</span>
+                                        <span className="font-extrabold text-slate-800">{note.isSaisie && hasExamen ? `${nExamen}/20` : '-'}</span>
                                     </div>
                                     <div className="flex justify-between p-1 bg-white rounded-lg px-2 col-span-2">
                                         <span>Moyenne Initiale:</span>
-                                        <span className={`font-extrabold ${initialAverage >= 10 ? 'text-green-600' : 'text-red-600'}`}>
-                                            {initialAverage.toFixed(2)}/20
+                                        <span className={`font-extrabold ${note.isSaisie && isInitialReady ? (initialAverage >= 10 ? 'text-green-600' : 'text-red-600') : 'text-slate-400'}`}>
+                                            {note.isSaisie && isInitialReady ? `${initialAverage.toFixed(2)}/20` : '-'}
                                         </span>
                                     </div>
-                                    {isRattrapageActive && (
+                                    {note.isSaisie && isRattrapageActive && (
                                         <div className="flex justify-between p-1 bg-amber-50 rounded-lg px-2 col-span-2 text-amber-800 border border-amber-100">
                                             <span>Rattrapage:</span>
                                             <span className="font-black">{nRattrapage}/20</span>
@@ -205,9 +251,15 @@ const MesNotes = () => {
                                     )}
                                 </div>
                                 
-                                {note.observation && (
-                                    <div className="mt-4 pt-4 border-t border-slate-100">
-                                        <p className="text-sm text-slate-600 italic">"{note.observation}"</p>
+                                {note.isSaisie ? (
+                                    note.observation ? (
+                                        <div className="mt-4 pt-4 border-t border-slate-100">
+                                            <p className="text-sm text-slate-600 italic">"{note.observation}"</p>
+                                        </div>
+                                    ) : null
+                                ) : (
+                                    <div className="mt-4 pt-4 border-t border-slate-100 text-center">
+                                        <p className="text-xs text-slate-400 italic">Non encore publiée par le prof</p>
                                     </div>
                                 )}
                             </div>

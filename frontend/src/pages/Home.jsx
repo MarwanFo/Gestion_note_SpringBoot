@@ -97,7 +97,7 @@ const Home = () => {
                 <div className="max-w-7xl mx-auto">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
                         {[
-                            { icon: BookOpen, title: "Suivi des Cours", color: "blue", desc: "Accédez à vos matières et coefficients en temps réel." },
+                            { icon: BookOpen, title: "Suivi des Cours", color: "blue", desc: "Accédez à vos matières en temps réel." },
                             { icon: Users, title: "Espace Enseignant", color: "indigo", desc: "Les professeurs peuvent saisir les notes en toute sécurité." },
                             { icon: BarChart3, title: "Bulletins PDF", color: "green", desc: "Générez vos relevés de notes officiels en un clic." }
                         ].map((f, i) => (

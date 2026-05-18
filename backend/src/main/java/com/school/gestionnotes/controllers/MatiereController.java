@@ -51,7 +51,6 @@ public class MatiereController {
         return matiereRepository.findById(id).map(matiere -> {
             matiere.setCode(matiereDetails.getCode());
             matiere.setLibelle(matiereDetails.getLibelle());
-            matiere.setCoefficient(matiereDetails.getCoefficient());
             matiere.setNbrHeures(matiereDetails.getNbrHeures());
             matiere.setFiliere(null);
             if (matiereDetails.getFiliere() != null && matiereDetails.getFiliere().getId() != null) {

@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import com.school.gestionnotes.entities.User;
+import com.school.gestionnotes.entities.Filiere;
 import com.school.gestionnotes.repositories.UserRepository;
 import java.util.UUID;
 import java.util.Collections;
@@ -22,6 +23,9 @@ public class ProfesseurController {
 
     @Autowired
     private com.school.gestionnotes.repositories.FiliereRepository filiereRepository;
+
+    @Autowired
+    private com.school.gestionnotes.repositories.MatiereRepository matiereRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -80,6 +84,16 @@ public class ProfesseurController {
             professeur.setFilieres(persistentFilieres);
         } else {
             professeur.setFilieres(new java.util.ArrayList<>());
+        }
+        
+        if (professeur.getMatieres() != null && !professeur.getMatieres().isEmpty()) {
+            List<com.school.gestionnotes.entities.Matiere> persistentMatieres = professeur.getMatieres().stream()
+                    .map(m -> matiereRepository.findById(m.getId()).orElse(null))
+                    .filter(java.util.Objects::nonNull)
+                    .collect(java.util.stream.Collectors.toList());
+            professeur.setMatieres(persistentMatieres);
+        } else {
+            professeur.setMatieres(new java.util.ArrayList<>());
         }
         
         Professeur savedProf = professeurRepository.save(professeur);
@@ -163,6 +177,16 @@ public class ProfesseurController {
                 prof.setFilieres(persistentFilieres);
             } else {
                 prof.setFilieres(new java.util.ArrayList<>());
+            }
+            
+            if (profDetails.getMatieres() != null) {
+                List<com.school.gestionnotes.entities.Matiere> persistentMatieres = profDetails.getMatieres().stream()
+                        .map(m -> matiereRepository.findById(m.getId()).orElse(null))
+                        .filter(java.util.Objects::nonNull)
+                        .collect(java.util.stream.Collectors.toList());
+                prof.setMatieres(persistentMatieres);
+            } else {
+                prof.setMatieres(new java.util.ArrayList<>());
             }
             
             try {

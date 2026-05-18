@@ -15,9 +15,8 @@ const MesClasses = () => {
                 const profileRes = await api.get('/professeurs/me');
                 setProfile(profileRes.data);
 
-                // Fetch classes
-                const response = await api.get('/matieres');
-                setMatieres(response.data);
+                // Fetch assigned classes from the profile
+                setMatieres(profileRes.data.matieres || []);
             } catch (error) {
                 console.error('Erreur:', error);
             } finally {
@@ -82,7 +81,7 @@ const MesClasses = () => {
                                 <h3 className="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
                                     {matiere.libelle}
                                 </h3>
-                                <p className="text-slate-500 text-sm mt-1">Coeff: {matiere.coefficient} • {matiere.nbrHeures}h annuelles</p>
+                                <p className="text-slate-500 text-sm mt-1">{matiere.nbrHeures}h annuelles</p>
                             </div>
                             
                             <div className="p-6 pt-0 space-y-4">

@@ -58,7 +58,18 @@ public class NoteController {
     @PreAuthorize("hasRole('ETUDIANT')")
     public ResponseEntity<List<Note>> getMyNotes(java.security.Principal principal) {
         return etudiantRepository.findByUserUsername(principal.getName())
-                .map(etudiant -> ResponseEntity.ok(noteRepository.findByEtudiantId(etudiant.getId())))
+                .map(etudiant -> {
+                    List<Note> allNotes = noteRepository.findByEtudiantId(etudiant.getId());
+                    if (etudiant.getFiliere() == null) {
+                        return ResponseEntity.ok(Collections.<Note>emptyList());
+                    }
+                    List<Note> filtered = allNotes.stream()
+                            .filter(n -> n.getMatiere() != null && 
+                                         n.getMatiere().getFiliere() != null && 
+                                         n.getMatiere().getFiliere().getId().equals(etudiant.getFiliere().getId()))
+                            .toList();
+                    return ResponseEntity.ok(filtered);
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 

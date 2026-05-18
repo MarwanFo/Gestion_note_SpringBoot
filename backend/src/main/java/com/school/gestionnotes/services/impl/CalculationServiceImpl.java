@@ -23,15 +23,11 @@ public class CalculationServiceImpl implements CalculationService {
         
         if (notes.isEmpty()) return 0.0;
 
-        double weightedSum = 0;
-        double totalCoefficients = 0;
-
+        double sum = 0;
         for (Note note : notes) {
-            double coef = note.getMatiere().getCoefficient();
-            weightedSum += note.getValeur() * coef;
-            totalCoefficients += coef;
+            sum += note.getValeur();
         }
 
-        return totalCoefficients > 0 ? (weightedSum / totalCoefficients) : 0.0;
+        return sum / notes.size();
     }
 }

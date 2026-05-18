@@ -14,7 +14,6 @@ const MatieresList = () => {
     const [formData, setFormData] = useState({ 
         code: '', 
         libelle: '', 
-        coefficient: '', 
         nbrHeures: '', 
         filiere: { id: '' } 
     });
@@ -60,7 +59,6 @@ const MatieresList = () => {
         setFormData({ 
             code: matiere.code, 
             libelle: matiere.libelle, 
-            coefficient: matiere.coefficient, 
             nbrHeures: matiere.nbrHeures, 
             filiere: { id: matiere.filiere?.id || '' } 
         });
@@ -79,7 +77,7 @@ const MatieresList = () => {
                 await api.post('/matieres', formData);
             }
             setIsModalOpen(false);
-            setFormData({ code: '', libelle: '', coefficient: '', nbrHeures: '', filiere: { id: '' } });
+            setFormData({ code: '', libelle: '', nbrHeures: '', filiere: { id: '' } });
             setIsEditing(false);
             setSelectedId(null);
             fetchMatieres();
@@ -116,7 +114,7 @@ const MatieresList = () => {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-extrabold text-slate-900">Gestion des Matières</h1>
-                    <p className="text-slate-500 font-medium">Consultez et gérez les cours et leurs coefficients.</p>
+                    <p className="text-slate-500 font-medium">Consultez et gérez les cours de votre établissement.</p>
                 </div>
                 <button 
                     onClick={() => setIsModalOpen(true)}
@@ -142,7 +140,6 @@ const MatieresList = () => {
                                 <th className="px-6 py-4">Matière</th>
                                 <th className="px-6 py-4">Code</th>
                                 <th className="px-6 py-4">Filière</th>
-                                <th className="px-6 py-4">Coefficient</th>
                                 <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
@@ -164,11 +161,6 @@ const MatieresList = () => {
                                         </td>
                                         <td className="px-6 py-4 font-medium">{matiere.code}</td>
                                         <td className="px-6 py-4 font-medium">{matiere.filiere ? matiere.filiere.code : '-'}</td>
-                                        <td className="px-6 py-4">
-                                            <span className="inline-flex px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs">
-                                                Coef: {matiere.coefficient || 1}
-                                            </span>
-                                        </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 <button onClick={() => handleEdit(matiere)} className="p-2 text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-lg"><Edit className="w-4 h-4" /></button>
@@ -206,20 +198,14 @@ const MatieresList = () => {
                                 <label className="text-sm font-semibold text-slate-700">Libellé (Nom) *</label>
                                 <input type="text" name="libelle" required value={formData.libelle} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4" placeholder="Ex: Algorithmique" />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-semibold text-slate-700">Coefficient</label>
-                                    <input type="number" name="coefficient" min="1" max="10" value={formData.coefficient} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4" />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-semibold text-slate-700">Filière</label>
-                                    <select name="filiereId" value={formData.filiere.id} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-700">
-                                        <option value="">-- Choisir --</option>
-                                        {Array.isArray(filieres) && filieres.map(f => (
-                                            <option key={f.id} value={f.id}>{f.code}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-semibold text-slate-700">Filière</label>
+                                <select name="filiereId" value={formData.filiere.id} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-700">
+                                    <option value="">-- Choisir --</option>
+                                    {Array.isArray(filieres) && filieres.map(f => (
+                                        <option key={f.id} value={f.id}>{f.code}</option>
+                                    ))}
+                                </select>
                             </div>
                             <div className="pt-4 mt-6 border-t border-slate-100 flex items-center justify-end gap-3">
                                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-all">Annuler</button>

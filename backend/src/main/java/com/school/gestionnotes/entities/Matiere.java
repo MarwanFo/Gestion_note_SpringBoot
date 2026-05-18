@@ -21,9 +21,6 @@ public class Matiere {
     @Column(nullable = false)
     private String libelle;
 
-    @Column(nullable = false)
-    private Double coefficient;
-
     private Integer nbrHeures;
 
     @ManyToOne

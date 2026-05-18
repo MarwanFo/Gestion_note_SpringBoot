@@ -17,8 +17,8 @@ const SaisieNotes = () => {
 
     const fetchMatieres = async () => {
         try {
-            const response = await api.get('/matieres');
-            setMatieres(response.data);
+            const profileRes = await api.get('/professeurs/me');
+            setMatieres(profileRes.data.matieres || []);
         } catch (error) {
             console.error('Erreur:', error);
         } finally {
@@ -168,24 +168,24 @@ const SaisieNotes = () => {
                                     students.map(student => {
                                         const note = notes[student.id] || { cc1: '', cc2: '', examen: '', rattrapage: '', observation: '' };
                                         
-                                        const nCc1 = parseFloat(note.cc1);
-                                        const nCc2 = parseFloat(note.cc2);
-                                        const nExamen = parseFloat(note.examen);
-                                        const nRattrapage = parseFloat(note.rattrapage);
+                                        const hasCc1 = note.cc1 !== '' && note.cc1 !== null && note.cc1 !== undefined;
+                                        const hasCc2 = note.cc2 !== '' && note.cc2 !== null && note.cc2 !== undefined;
+                                        const hasExamen = note.examen !== '' && note.examen !== null && note.examen !== undefined;
                                         
                                         let ccAvg = 0;
                                         let ccCount = 0;
-                                        if (!isNaN(nCc1)) { ccAvg += nCc1; ccCount++; }
-                                        if (!isNaN(nCc2)) { ccAvg += nCc2; ccCount++; }
+                                        if (hasCc1) { ccAvg += parseFloat(note.cc1); ccCount++; }
+                                        if (hasCc2) { ccAvg += parseFloat(note.cc2); ccCount++; }
                                         ccAvg = ccCount > 0 ? (ccAvg / ccCount) : 0;
                                         
-                                        const initialAverage = (ccAvg * 0.25) + ((isNaN(nExamen) ? 0 : nExamen) * 0.75);
-                                        const isInitialReady = !isNaN(nCc1) && !isNaN(nCc2) && !isNaN(nExamen);
+                                        const initialAverage = (ccAvg * 0.25) + ((hasExamen ? parseFloat(note.examen) : 0) * 0.75);
+                                        const isInitialReady = hasCc1 && hasCc2 && hasExamen;
                                         const isRattrapageOpen = isInitialReady && initialAverage < 10.0;
                                         
                                         let finalAverage = initialAverage;
-                                        if (isRattrapageOpen && !isNaN(nRattrapage)) {
-                                            const rattAverage = (ccAvg * 0.25) + (nRattrapage * 0.75);
+                                        const hasRatt = note.rattrapage !== '' && note.rattrapage !== null && note.rattrapage !== undefined;
+                                        if (isRattrapageOpen && hasRatt) {
+                                            const rattAverage = (ccAvg * 0.25) + (parseFloat(note.rattrapage) * 0.75);
                                             finalAverage = Math.max(initialAverage, rattAverage);
                                         }
 

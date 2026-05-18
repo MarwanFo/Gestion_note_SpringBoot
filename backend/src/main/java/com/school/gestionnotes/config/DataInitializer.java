@@ -62,6 +62,23 @@ public class DataInitializer implements CommandLineRunner {
                 System.out.println(">>> Student user created: student1 / student123");
             }
             
+            // Create some test Filieres first
+            Filiere infoFiliere = null;
+            Filiere testFiliere = null;
+            if (filiereRepository.count() == 0) {
+                infoFiliere = Filiere.builder().code("INFO").libelle("Génie Informatique").build();
+                testFiliere = Filiere.builder().code("TEST99").libelle("Filière Test 99").build();
+                infoFiliere = filiereRepository.save(infoFiliere);
+                testFiliere = filiereRepository.save(testFiliere);
+                System.out.println(">>> Filieres created.");
+            } else {
+                infoFiliere = filiereRepository.findByCode("INFO").orElse(null);
+                if (infoFiliere == null) {
+                    infoFiliere = filiereRepository.findAll().stream().findFirst().orElse(null);
+                }
+                testFiliere = filiereRepository.findByCode("TEST99").orElse(null);
+            }
+
             // Check if this student user has an Etudiant profile
             final User finalStudent = student;
             Etudiant etudiantProfile = etudiantRepository.findByUserUsername("student1").orElse(null);
@@ -72,6 +89,7 @@ public class DataInitializer implements CommandLineRunner {
                         .cne("TEST12345")
                         .user(finalStudent)
                         .email(finalStudent.getEmail())
+                        .filiere(infoFiliere)
                         .build();
                 etudiantProfile = etudiantRepository.save(etudiantProfile);
                 System.out.println(">>> Etudiant profile created and linked to student1");
@@ -79,9 +97,9 @@ public class DataInitializer implements CommandLineRunner {
 
             // Create some test subjects (Matieres) and Grades (Notes) to see them in the UI
             if (matiereRepository.count() == 0) {
-                Matiere math = Matiere.builder().code("MATH101").libelle("Algèbre Linéaire").coefficient(3.0).build();
-                Matiere info = Matiere.builder().code("INFO101").libelle("Programmation Java").coefficient(4.0).build();
-                Matiere reseau = Matiere.builder().code("RES101").libelle("Réseaux Informatiques").coefficient(2.0).build();
+                Matiere math = Matiere.builder().code("MATH101").libelle("Algèbre Linéaire").filiere(infoFiliere).build();
+                Matiere info = Matiere.builder().code("INFO101").libelle("Programmation Java").filiere(infoFiliere).build();
+                Matiere reseau = Matiere.builder().code("RES101").libelle("Réseaux Informatiques").filiere(testFiliere).build();
                 matiereRepository.save(math);
                 matiereRepository.save(info);
                 matiereRepository.save(reseau);

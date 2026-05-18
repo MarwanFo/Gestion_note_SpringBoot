@@ -17,8 +17,10 @@ const ProfesseursList = () => {
         prenom: '', 
         email: '',
         grade: '', 
-        filieres: [] 
+        filieres: [],
+        matieres: []
     });
+    const [allMatieres, setAllMatieres] = useState([]);
 
     const [successModal, setSuccessModal] = useState({ isOpen: false, username: '', password: '', title: '' });
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null, isDestructive: false });
@@ -33,7 +35,17 @@ const ProfesseursList = () => {
     useEffect(() => {
         fetchProfesseurs();
         fetchFilieres();
+        fetchAllMatieres();
     }, []);
+
+    const fetchAllMatieres = async () => {
+        try {
+            const response = await api.get('/matieres');
+            setAllMatieres(response.data);
+        } catch (error) {
+            console.error('Erreur matieres:', error);
+        }
+    };
 
     const fetchProfesseurs = async () => {
         try {
@@ -64,10 +76,30 @@ const ProfesseursList = () => {
     const handleFiliereChange = (filiereId) => {
         setFormData(prev => {
             const exists = prev.filieres.find(f => f.id === filiereId);
+            let updatedFilieres;
             if (exists) {
-                return { ...prev, filieres: prev.filieres.filter(f => f.id !== filiereId) };
+                updatedFilieres = prev.filieres.filter(f => f.id !== filiereId);
             } else {
-                return { ...prev, filieres: [...prev.filieres, { id: filiereId }] };
+                updatedFilieres = [...prev.filieres, { id: filiereId }];
+            }
+            
+            // Automatically clean selected matieres that belong to the deselected filiere
+            const updatedMatieres = prev.matieres.filter(m => {
+                const fullMatiere = allMatieres.find(am => am.id === m.id);
+                return fullMatiere && updatedFilieres.some(f => f.id === fullMatiere.filiere?.id);
+            });
+            
+            return { ...prev, filieres: updatedFilieres, matieres: updatedMatieres };
+        });
+    };
+
+    const handleMatiereChange = (matiereId) => {
+        setFormData(prev => {
+            const exists = prev.matieres.find(m => m.id === matiereId);
+            if (exists) {
+                return { ...prev, matieres: prev.matieres.filter(m => m.id !== matiereId) };
+            } else {
+                return { ...prev, matieres: [...prev.matieres, { id: matiereId }] };
             }
         });
     };
@@ -79,7 +111,8 @@ const ProfesseursList = () => {
             prenom: prof.prenom, 
             email: prof.email || '',
             grade: prof.grade, 
-            filieres: prof.filieres || [] 
+            filieres: prof.filieres || [],
+            matieres: prof.matieres || []
         });
         setSelectedId(prof.id);
         setIsEditing(true);
@@ -93,7 +126,7 @@ const ProfesseursList = () => {
             if (isEditing) {
                 await api.put(`/professeurs/${selectedId}`, formData);
                 setIsModalOpen(false);
-                setFormData({ matricule: '', nom: '', prenom: '', email: '', grade: '', filieres: [] });
+                setFormData({ matricule: '', nom: '', prenom: '', email: '', grade: '', filieres: [], matieres: [] });
                 setIsEditing(false);
                 setSelectedId(null);
                 fetchProfesseurs();
@@ -110,7 +143,7 @@ const ProfesseursList = () => {
                     });
                 }
                 
-                setFormData({ matricule: '', nom: '', prenom: '', email: '', grade: '', filieres: [] });
+                setFormData({ matricule: '', nom: '', prenom: '', email: '', grade: '', filieres: [], matieres: [] });
                 fetchProfesseurs();
             }
         } catch (error) {
@@ -203,7 +236,8 @@ const ProfesseursList = () => {
                             <tr>
                                 <th className="px-6 py-4">Professeur</th>
                                 <th className="px-6 py-4">Matricule</th>
-                                <th className="px-6 py-4">Filière</th>
+                                <th className="px-6 py-4">Filières</th>
+                                <th className="px-6 py-4">Matières Enseignées</th>
                                 <th className="px-6 py-4">Grade</th>
                                 <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
@@ -236,6 +270,17 @@ const ProfesseursList = () => {
                                                     ))}
                                                 </div>
                                             ) : '-'}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {prof.matieres && prof.matieres.length > 0 ? (
+                                                <div className="flex flex-wrap gap-1 max-w-xs">
+                                                    {prof.matieres.map(m => (
+                                                        <span key={m.id} className="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg">{m.libelle}</span>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span className="text-slate-400 italic text-xs">Aucune matière</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4">{prof.grade || '-'}</td>
                                         <td className="px-6 py-4 text-right">
@@ -305,6 +350,7 @@ const ProfesseursList = () => {
                                 <label className="text-sm font-semibold text-slate-700 ml-1">Grade</label>
                                 <input type="text" name="grade" value={formData.grade} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all" placeholder="Ex: PES" />
                             </div>
+
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-slate-700 ml-1">Filières Enseignées</label>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
@@ -318,11 +364,47 @@ const ProfesseursList = () => {
                                                     onChange={() => handleFiliereChange(f.id)}
                                                     className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-600"
                                                 />
-                                                <span className="font-bold text-sm">{f.code}</span>
+                                                <span className="font-bold text-xs">{f.code}</span>
                                             </label>
                                         );
                                     })}
                                 </div>
+                            </div>
+
+                            {/* Matières selection section */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-slate-700 ml-1">Matières Enseignées</label>
+                                {formData.filieres.length === 0 ? (
+                                    <div className="text-center p-4 bg-slate-50 border border-slate-100 rounded-xl text-slate-400 text-xs italic">
+                                        Veuillez d'abord sélectionner une ou plusieurs filières pour afficher leurs matières.
+                                    </div>
+                                ) : allMatieres.filter(m => formData.filieres.some(sf => sf.id === m.filiere?.id)).length === 0 ? (
+                                    <div className="text-center p-4 bg-slate-50 border border-slate-100 rounded-xl text-slate-400 text-xs italic">
+                                        Aucune matière disponible pour les filières sélectionnées.
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 max-h-48 overflow-y-auto">
+                                        {allMatieres
+                                            .filter(m => formData.filieres.some(sf => sf.id === m.filiere?.id))
+                                            .map(m => {
+                                                const isChecked = formData.matieres.some(selected => selected.id === m.id);
+                                                return (
+                                                    <label key={m.id} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${isChecked ? 'bg-emerald-100/50 text-emerald-700' : 'hover:bg-slate-200/50 text-slate-600'}`}>
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={isChecked}
+                                                            onChange={() => handleMatiereChange(m.id)}
+                                                            className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-600"
+                                                        />
+                                                        <div className="flex flex-col text-left">
+                                                            <span className="font-bold text-xs">{m.libelle}</span>
+                                                            <span className="text-[9px] text-slate-400">({m.filiere?.code})</span>
+                                                        </div>
+                                                    </label>
+                                                );
+                                            })}
+                                    </div>
+                                )}
                             </div>
                             
                             <div className="pt-4 mt-6 border-t border-slate-100 flex items-center justify-end gap-3">
