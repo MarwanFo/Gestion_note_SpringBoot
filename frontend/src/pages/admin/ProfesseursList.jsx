@@ -296,15 +296,14 @@ const ProfesseursList = () => {
                                     <label className="text-sm font-semibold text-slate-700 ml-1">Nom *</label>
                                     <input type="text" name="nom" required value={formData.nom} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all" />
                                 </div>
-                            <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                     <label className="text-sm font-semibold text-slate-700 ml-1">Prénom *</label>
                                     <input type="text" name="prenom" required value={formData.prenom} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all" />
                                 </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-semibold text-slate-700 ml-1">Grade</label>
-                                    <input type="text" name="grade" value={formData.grade} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all" placeholder="Ex: PES" />
-                                </div>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-semibold text-slate-700 ml-1">Grade</label>
+                                <input type="text" name="grade" value={formData.grade} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all" placeholder="Ex: PES" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-slate-700 ml-1">Filières Enseignées</label>
