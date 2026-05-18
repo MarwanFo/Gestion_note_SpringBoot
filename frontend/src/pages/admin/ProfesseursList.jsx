@@ -17,7 +17,7 @@ const ProfesseursList = () => {
         prenom: '', 
         email: '',
         grade: '', 
-        filiere: { id: '' } 
+        filieres: [] 
     });
 
     const [successModal, setSuccessModal] = useState({ isOpen: false, username: '', password: '', title: '' });
@@ -58,11 +58,18 @@ const ProfesseursList = () => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        if (name === 'filiereId') {
-            setFormData(prev => ({ ...prev, filiere: { id: value } }));
-        } else {
-            setFormData(prev => ({ ...prev, [name]: value }));
-        }
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleFiliereChange = (filiereId) => {
+        setFormData(prev => {
+            const exists = prev.filieres.find(f => f.id === filiereId);
+            if (exists) {
+                return { ...prev, filieres: prev.filieres.filter(f => f.id !== filiereId) };
+            } else {
+                return { ...prev, filieres: [...prev.filieres, { id: filiereId }] };
+            }
+        });
     };
 
     const handleEdit = (prof) => {
@@ -72,7 +79,7 @@ const ProfesseursList = () => {
             prenom: prof.prenom, 
             email: prof.email || '',
             grade: prof.grade, 
-            filiere: { id: prof.filiere?.id || '' } 
+            filieres: prof.filieres || [] 
         });
         setSelectedId(prof.id);
         setIsEditing(true);
@@ -86,7 +93,7 @@ const ProfesseursList = () => {
             if (isEditing) {
                 await api.put(`/professeurs/${selectedId}`, formData);
                 setIsModalOpen(false);
-                setFormData({ matricule: '', nom: '', prenom: '', email: '', grade: '', filiere: { id: '' } });
+                setFormData({ matricule: '', nom: '', prenom: '', email: '', grade: '', filieres: [] });
                 setIsEditing(false);
                 setSelectedId(null);
                 fetchProfesseurs();
@@ -103,7 +110,7 @@ const ProfesseursList = () => {
                     });
                 }
                 
-                setFormData({ matricule: '', nom: '', prenom: '', email: '', grade: '', filiere: { id: '' } });
+                setFormData({ matricule: '', nom: '', prenom: '', email: '', grade: '', filieres: [] });
                 fetchProfesseurs();
             }
         } catch (error) {
@@ -221,7 +228,15 @@ const ProfesseursList = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 font-medium">{prof.matricule}</td>
-                                        <td className="px-6 py-4">{prof.filiere ? prof.filiere.code : '-'}</td>
+                                        <td className="px-6 py-4">
+                                            {prof.filieres && prof.filieres.length > 0 ? (
+                                                <div className="flex flex-wrap gap-1">
+                                                    {prof.filieres.map(f => (
+                                                        <span key={f.id} className="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-lg">{f.code}</span>
+                                                    ))}
+                                                </div>
+                                            ) : '-'}
+                                        </td>
                                         <td className="px-6 py-4">{prof.grade || '-'}</td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
@@ -281,26 +296,36 @@ const ProfesseursList = () => {
                                     <label className="text-sm font-semibold text-slate-700 ml-1">Nom *</label>
                                     <input type="text" name="nom" required value={formData.nom} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all" />
                                 </div>
+                            <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                     <label className="text-sm font-semibold text-slate-700 ml-1">Prénom *</label>
                                     <input type="text" name="prenom" required value={formData.prenom} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all" />
                                 </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                     <label className="text-sm font-semibold text-slate-700 ml-1">Grade</label>
                                     <input type="text" name="grade" value={formData.grade} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all" placeholder="Ex: PES" />
                                 </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-semibold text-slate-700 ml-1">Filière</label>
-                                    <select name="filiereId" value={formData.filiere.id} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all">
-                                        <option value="">-- Choisir --</option>
-                                        {Array.isArray(filieres) && filieres.map(f => (
-                                            <option key={f.id} value={f.id}>{f.code}</option>
-                                        ))}
-                                    </select>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-slate-700 ml-1">Filières Enseignées</label>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                    {Array.isArray(filieres) && filieres.map(f => {
+                                        const isChecked = formData.filieres.some(selected => selected.id === f.id);
+                                        return (
+                                            <label key={f.id} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${isChecked ? 'bg-indigo-100/50 text-indigo-700' : 'hover:bg-slate-200/50 text-slate-600'}`}>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={isChecked}
+                                                    onChange={() => handleFiliereChange(f.id)}
+                                                    className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-600"
+                                                />
+                                                <span className="font-bold text-sm">{f.code}</span>
+                                            </label>
+                                        );
+                                    })}
                                 </div>
                             </div>
+                            
                             <div className="pt-4 mt-6 border-t border-slate-100 flex items-center justify-end gap-3">
                                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-all">Annuler</button>
                                 <button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2">

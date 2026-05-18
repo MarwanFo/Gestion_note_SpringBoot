@@ -30,7 +30,7 @@ public class Filiere {
     @com.fasterxml.jackson.annotation.JsonIgnore
     private List<Matiere> matieres;
 
-    @OneToMany(mappedBy = "filiere")
+    @ManyToMany(mappedBy = "filieres")
     @com.fasterxml.jackson.annotation.JsonIgnore
     private List<Professeur> professeurs;
 }

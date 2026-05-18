@@ -72,10 +72,14 @@ public class ProfesseurController {
         user = userRepository.save(user);
         professeur.setUser(user);
         
-        if (professeur.getFiliere() != null && professeur.getFiliere().getId() != null) {
-            filiereRepository.findById(professeur.getFiliere().getId()).ifPresent(professeur::setFiliere);
+        if (professeur.getFilieres() != null && !professeur.getFilieres().isEmpty()) {
+            List<Filiere> persistentFilieres = professeur.getFilieres().stream()
+                    .map(f -> filiereRepository.findById(f.getId()).orElse(null))
+                    .filter(java.util.Objects::nonNull)
+                    .collect(java.util.stream.Collectors.toList());
+            professeur.setFilieres(persistentFilieres);
         } else {
-            professeur.setFiliere(null);
+            professeur.setFilieres(new java.util.ArrayList<>());
         }
         
         Professeur savedProf = professeurRepository.save(professeur);
@@ -150,10 +154,17 @@ public class ProfesseurController {
             prof.setPrenom(profDetails.getPrenom());
             prof.setEmail(profDetails.getEmail().trim());
             prof.setGrade(profDetails.getGrade());
-            prof.setFiliere(null);
-            if (profDetails.getFiliere() != null && profDetails.getFiliere().getId() != null) {
-                filiereRepository.findById(profDetails.getFiliere().getId()).ifPresent(prof::setFiliere);
+            
+            if (profDetails.getFilieres() != null) {
+                List<Filiere> persistentFilieres = profDetails.getFilieres().stream()
+                        .map(f -> filiereRepository.findById(f.getId()).orElse(null))
+                        .filter(java.util.Objects::nonNull)
+                        .collect(java.util.stream.Collectors.toList());
+                prof.setFilieres(persistentFilieres);
+            } else {
+                prof.setFilieres(new java.util.ArrayList<>());
             }
+            
             try {
                 return ResponseEntity.ok(professeurRepository.save(prof));
             } catch (org.springframework.dao.DataIntegrityViolationException e) {
