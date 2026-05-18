@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Award, TrendingUp, User, Sparkles } from 'lucide-react';
+import { BookOpen, Award, TrendingUp, User, Sparkles, Printer } from 'lucide-react';
 import api from '../../api/axios';
 
 const MesNotes = () => {
@@ -110,6 +110,235 @@ const MesNotes = () => {
         ? (savedNotes.reduce((acc, curr) => acc + curr.valeur, 0) / savedNotes.length).toFixed(2)
         : '0.00';
 
+    const handlePrintBulletin = () => {
+        const printWindow = window.open('', '_blank');
+        
+        // Calculate validation status for each subject
+        const subjectsHtml = notes.map(note => {
+            const hasCc1 = note.cc1 !== null;
+            const hasCc2 = note.cc2 !== null;
+            const hasExam = note.examen !== null;
+            const hasRatt = note.rattrapage !== null;
+            
+            const isValide = note.isSaisie && note.valeur >= 10;
+            const statusLabel = note.isSaisie 
+                ? (isValide ? '<span style="color: #16a34a; font-weight: bold;">Validé</span>' : '<span style="color: #dc2626; font-weight: bold;">Non Validé</span>')
+                : '<span style="color: #64748b; font-style: italic;">Non encore saisie</span>';
+                
+            return `
+                <tr>
+                    <td style="padding: 12px 10px; border: 1px solid #e2e8f0; font-size: 13px;">
+                        <strong>${note.matiere?.libelle}</strong><br>
+                        <small style="color: #64748b; font-weight: 500;">${note.matiere?.code}</small>
+                    </td>
+                    <td align="center" style="padding: 12px 10px; border: 1px solid #e2e8f0; font-size: 13px;">${note.isSaisie && hasCc1 ? note.cc1.toFixed(2) : '-'}</td>
+                    <td align="center" style="padding: 12px 10px; border: 1px solid #e2e8f0; font-size: 13px;">${note.isSaisie && hasCc2 ? note.cc2.toFixed(2) : '-'}</td>
+                    <td align="center" style="padding: 12px 10px; border: 1px solid #e2e8f0; font-size: 13px;">${note.isSaisie && hasExam ? note.examen.toFixed(2) : '-'}</td>
+                    <td align="center" style="padding: 12px 10px; border: 1px solid #e2e8f0; font-size: 13px;">${note.isSaisie && hasRatt ? note.rattrapage.toFixed(2) : '-'}</td>
+                    <td align="center" style="padding: 12px 10px; border: 1px solid #e2e8f0; font-weight: bold; font-size: 1.1em; color: #1e3a8a;">${note.isSaisie && note.valeur !== null ? note.valeur.toFixed(2) : '-'}</td>
+                    <td align="center" style="padding: 12px 10px; border: 1px solid #e2e8f0; font-size: 13px;">${statusLabel}</td>
+                </tr>
+            `;
+        }).join('');
+
+        const isAdmis = parseFloat(moyenne) >= 10;
+        const totalMatieres = notes.length;
+        const totalSaisie = savedNotes.length;
+        const globalStatus = totalSaisie < totalMatieres 
+            ? '<span style="color: #d97706; font-weight: bold;">Résultats Incomplets</span>'
+            : (isAdmis ? '<span style="color: #16a34a; font-weight: bold;">ADMIS (VALIDÉ)</span>' : '<span style="color: #dc2626; font-weight: bold;">NON ADMIS (AJOURNÉ)</span>');
+
+        const currentDate = new Date().toLocaleDateString('fr-FR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Bulletin de Notes - ${profile?.nom} ${profile?.prenom}</title>
+                    <style>
+                        body {
+                            font-family: 'Inter', system-ui, sans-serif;
+                            color: #1e293b;
+                            margin: 0;
+                            padding: 40px;
+                            line-height: 1.5;
+                        }
+                        .header-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-bottom: 40px;
+                        }
+                        .header-title {
+                            text-align: center;
+                            text-transform: uppercase;
+                            letter-spacing: 1px;
+                            margin-top: 0;
+                            color: #1e3a8a;
+                            font-size: 24px;
+                            font-weight: 800;
+                            border-bottom: 3px double #1e3a8a;
+                            padding-bottom: 10px;
+                        }
+                        .student-info {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-bottom: 30px;
+                            background-color: #f8fafc;
+                            border: 1px solid #e2e8f0;
+                        }
+                        .student-info td {
+                            padding: 12px 20px;
+                            font-size: 14px;
+                            border: 1px solid #e2e8f0;
+                        }
+                        .grades-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-bottom: 45px;
+                        }
+                        .grades-table th {
+                            background-color: #1e3a8a;
+                            color: white;
+                            font-weight: bold;
+                            text-transform: uppercase;
+                            font-size: 11px;
+                            letter-spacing: 0.5px;
+                            padding: 12px 10px;
+                            border: 1px solid #1e3a8a;
+                        }
+                        .grades-table tr:nth-child(even) {
+                            background-color: #f8fafc;
+                        }
+                        .summary-box {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-bottom: 60px;
+                            border: 2px solid #1e3a8a;
+                            background-color: #eff6ff;
+                        }
+                        .summary-box td {
+                            padding: 15px 25px;
+                            font-size: 16px;
+                        }
+                        .footer-section {
+                            width: 100%;
+                            margin-top: 50px;
+                        }
+                        .signature-box {
+                            width: 300px;
+                            text-align: center;
+                            border-top: 1px dashed #94a3b8;
+                            padding-top: 10px;
+                            font-size: 12px;
+                            color: #64748b;
+                        }
+                        @media print {
+                            body {
+                                padding: 20px;
+                            }
+                            .no-print {
+                                display: none !important;
+                            }
+                        }
+                        .btn-print {
+                            background-color: #1e3a8a;
+                            color: white;
+                            border: none;
+                            padding: 12px 24px;
+                            font-size: 14px;
+                            font-weight: bold;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            margin-bottom: 25px;
+                            transition: background-color 0.2s;
+                        }
+                        .btn-print:hover {
+                            background-color: #1d4ed8;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div style="text-align: right;" class="no-print">
+                        <button class="btn-print" onclick="window.print()">🖨️ Imprimer / Enregistrer en PDF</button>
+                    </div>
+                    
+                    <table class="header-table">
+                        <tr>
+                            <td width="35%">
+                                <div style="font-weight: 800; font-size: 14px; color: #1e3a8a; text-transform: uppercase;">UNIVERSITÉ HASSAN II</div>
+                                <div style="font-weight: 600; font-size: 12px; color: #1e3a8a;">ÉCOLE SUPÉRIEURE DE TECHNOLOGIE</div>
+                                <div style="font-size: 11px; color: #64748b;">Rabat, Maroc</div>
+                            </td>
+                            <td width="30%" align="center">
+                                <span style="font-size: 32px;">🏫</span>
+                            </td>
+                            <td width="35%" align="right" style="font-size: 12px; color: #64748b;">
+                                Date d'édition : ${currentDate}
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div class="header-title">Relevé de Notes & Bulletin Académique</div>
+                    <br/>
+
+                    <table class="student-info">
+                        <tr>
+                            <td width="50%"><strong>Nom & Prénom :</strong> ${profile?.nom} ${profile?.prenom}</td>
+                            <td width="50%"><strong>Filière :</strong> ${profile?.filiere?.code || 'Non spécifié'} - ${profile?.filiere?.libelle || ''}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CNE (Identifiant national) :</strong> ${profile?.cne}</td>
+                            <td><strong>Année Universitaire :</strong> 2025/2026</td>
+                        </tr>
+                    </table>
+
+                    <table class="grades-table">
+                        <thead>
+                            <tr>
+                                <th width="35%">Matière</th>
+                                <th width="10%">CC1</th>
+                                <th width="10%">CC2</th>
+                                <th width="10%">Examen</th>
+                                <th width="10%">Rattrapage</th>
+                                <th width="12%">Note/20</th>
+                                <th width="13%">Résultat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${subjectsHtml}
+                        </tbody>
+                    </table>
+
+                    <table class="summary-box">
+                        <tr>
+                            <td width="50%"><strong>Moyenne Générale :</strong> <span style="font-size: 1.3em; font-weight: 900; color: #1e3a8a;">${moyenne} / 20</span></td>
+                            <td width="50%" align="right"><strong>Résultat Global :</strong> <span style="font-size: 1.1em; text-transform: uppercase;">${globalStatus}</span></td>
+                        </tr>
+                    </table>
+
+                    <table class="footer-section" width="100%">
+                        <tr>
+                            <td width="50%">
+                                <p style="font-size: 11px; color: #64748b; margin-bottom: 70px;"><em>Le présent bulletin est officiel et infalsifiable. Toute rature l'annule.</em></p>
+                            </td>
+                            <td width="50%" align="right">
+                                <div style="margin-bottom: 70px; font-size: 13px; font-weight: 500;">Fait à Rabat, le ${currentDate}</div>
+                                <div class="signature-box">
+                                    <strong>Le Directeur de l'Établissement</strong><br/>
+                                    Cachet et Signature de l'Administration
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+    };
+
     if (loading) {
         return <div className="p-8 text-center text-slate-500 font-medium">Chargement de vos données...</div>;
     }
@@ -119,7 +348,7 @@ const MesNotes = () => {
             {/* Header / Profile Card */}
             <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 text-white shadow-xl shadow-blue-600/20 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
                     <div className="flex items-center gap-5">
                         <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30 shadow-inner">
                             <User className="w-8 h-8 text-white" />
@@ -130,14 +359,24 @@ const MesNotes = () => {
                         </div>
                     </div>
                     
-                    <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/20">
-                        <div className="bg-white/20 p-3 rounded-xl">
-                            <Award className="w-6 h-6 text-yellow-300" />
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full lg:w-auto">
+                        <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/20">
+                            <div className="bg-white/20 p-3 rounded-xl">
+                                <Award className="w-6 h-6 text-yellow-300" />
+                            </div>
+                            <div>
+                                <p className="text-blue-100 text-sm font-semibold uppercase tracking-wider">Moyenne Générale</p>
+                                <p className="text-3xl font-black">{moyenne} <span className="text-lg text-blue-200 font-bold">/ 20</span></p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-blue-100 text-sm font-semibold uppercase tracking-wider">Moyenne Générale</p>
-                            <p className="text-3xl font-black">{moyenne} <span className="text-lg text-blue-200 font-bold">/ 20</span></p>
-                        </div>
+                        
+                        <button
+                            onClick={handlePrintBulletin}
+                            className="bg-white text-blue-700 hover:bg-blue-50 px-6 py-4 rounded-2xl font-bold transition-all shadow-md flex items-center justify-center gap-2 border border-white/10 shrink-0"
+                        >
+                            <Printer className="w-5 h-5" />
+                            Mon Bulletin
+                        </button>
                     </div>
                 </div>
             </div>
