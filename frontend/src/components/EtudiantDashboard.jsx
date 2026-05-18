@@ -237,9 +237,8 @@ const EtudiantDashboard = () => {
                     <table class="header-table">
                         <tr>
                             <td width="35%">
-                                <div style="font-weight: 800; font-size: 14px; color: #1e3a8a; text-transform: uppercase;">UNIVERSITÉ HASSAN II</div>
-                                <div style="font-weight: 600; font-size: 12px; color: #1e3a8a;">ÉCOLE SUPÉRIEURE DE TECHNOLOGIE</div>
-                                <div style="font-size: 11px; color: #64748b;">Rabat, Maroc</div>
+                                <div style="font-weight: 800; font-size: 14px; color: #1e3a8a; text-transform: uppercase;">UPF University</div>
+                                <div style="font-size: 11px; color: #64748b;">Fes, Maroc</div>
                             </td>
                             <td width="30%" align="center">
                                 <span style="font-size: 32px;">🏫</span>
@@ -294,7 +293,7 @@ const EtudiantDashboard = () => {
                                 <p style="font-size: 11px; color: #64748b; margin-bottom: 70px;"><em>Le présent bulletin est officiel et infalsifiable. Toute rature l'annule.</em></p>
                             </td>
                             <td width="50%" align="right">
-                                <div style="margin-bottom: 70px; font-size: 13px; font-weight: 500;">Fait à Rabat, le ${currentDate}</div>
+                                <div style="margin-bottom: 70px; font-size: 13px; font-weight: 500;">Fait à Fes, le ${currentDate}</div>
                                 <div class="signature-box">
                                     <strong>Le Directeur de l'Établissement</strong><br/>
                                     Cachet et Signature de l'Administration
