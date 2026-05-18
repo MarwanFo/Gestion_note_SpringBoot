@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, User, Edit, Trash2, X, Save, RefreshCw, Copy } from 'lucide-react';
+import { Plus, Search, User, Edit, Trash2, X, Save, RefreshCw, Copy, Check, AlertTriangle, Key } from 'lucide-react';
 import api from '../../api/axios';
 
 const ProfesseursList = () => {
@@ -18,6 +18,16 @@ const ProfesseursList = () => {
         grade: '', 
         filiere: { id: '' } 
     });
+
+    const [successModal, setSuccessModal] = useState({ isOpen: false, username: '', password: '', title: '' });
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null, isDestructive: false });
+    const [copiedField, setCopiedField] = useState(null);
+
+    const handleCopy = (text, field) => {
+        navigator.clipboard.writeText(text);
+        setCopiedField(field);
+        setTimeout(() => setCopiedField(null), 2000);
+    };
 
     useEffect(() => {
         fetchProfesseurs();
@@ -71,29 +81,30 @@ const ProfesseursList = () => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            let response;
             if (isEditing) {
                 await api.put(`/professeurs/${selectedId}`, formData);
+                setIsModalOpen(false);
+                setFormData({ matricule: '', nom: '', prenom: '', grade: '', filiere: { id: '' } });
+                setIsEditing(false);
+                setSelectedId(null);
+                fetchProfesseurs();
             } else {
-                response = await api.post('/professeurs', formData);
-            }
-            setIsModalOpen(false);
-            
-            if (!isEditing && response?.data?.generatedPassword) {
-                const email = formData.nom.toLowerCase() + "." + formData.prenom.toLowerCase() + "@school.com";
-                const username = "prof_" + formData.matricule.toLowerCase();
+                const response = await api.post('/professeurs', formData);
+                setIsModalOpen(false);
                 
-                const credsText = `Email: ${email}\nLogin: ${username}\nMot de passe: ${response.data.generatedPassword}`;
+                if (response?.data?.generatedPassword) {
+                    const username = "prof_" + formData.matricule.toLowerCase();
+                    setSuccessModal({
+                        isOpen: true,
+                        username: username,
+                        password: response.data.generatedPassword,
+                        title: 'Compte Professeur Créé !'
+                    });
+                }
                 
-                // Show a nice alert and copy to clipboard
-                navigator.clipboard.writeText(credsText).catch(() => {});
-                alert(`✅ COMPTE CRÉÉ AVEC SUCCÈS !\n\n${credsText}\n\n(Ces informations ont été copiées dans votre presse-papier)`);
+                setFormData({ matricule: '', nom: '', prenom: '', grade: '', filiere: { id: '' } });
+                fetchProfesseurs();
             }
-            
-            setFormData({ matricule: '', nom: '', prenom: '', grade: '', filiere: { id: '' } });
-            setIsEditing(false);
-            setSelectedId(null);
-            fetchProfesseurs();
         } catch (error) {
             alert("Erreur lors de l'enregistrement.");
         } finally {
@@ -101,27 +112,55 @@ const ProfesseursList = () => {
         }
     };
 
+    const promptDelete = (id) => {
+        setConfirmModal({
+            isOpen: true,
+            title: "Supprimer le professeur",
+            message: "Voulez-vous vraiment supprimer ce professeur ? Cette action est irréversible.",
+            isDestructive: true,
+            onConfirm: () => handleDelete(id)
+        });
+    };
+
     const handleDelete = async (id) => {
-        if (window.confirm("Voulez-vous vraiment supprimer ce professeur ?")) {
-            try {
-                await api.delete(`/professeurs/${id}`);
-                fetchProfesseurs();
-            } catch (error) {
-                alert("Erreur lors de la suppression.");
-            }
+        try {
+            await api.delete(`/professeurs/${id}`);
+            fetchProfesseurs();
+            setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null, isDestructive: false });
+        } catch (error) {
+            alert("Erreur lors de la suppression.");
+            setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null, isDestructive: false });
         }
     };
 
+    const promptResetPassword = (id, nom, prenom) => {
+        setConfirmModal({
+            isOpen: true,
+            title: "Réinitialiser le mot de passe",
+            message: `Voulez-vous générer un nouveau mot de passe pour le Pr. ${nom} ${prenom} ? L'ancien mot de passe sera définitivement perdu.`,
+            isDestructive: false,
+            onConfirm: () => handleResetPassword(id, nom, prenom)
+        });
+    };
+
     const handleResetPassword = async (id, nom, prenom) => {
-        if (window.confirm(`Générer un nouveau mot de passe pour le Pr. ${nom} ${prenom} ?`)) {
-            try {
-                const response = await api.post(`/professeurs/${id}/reset-password`);
-                const newPass = response.data.newPassword;
-                navigator.clipboard.writeText(`Nouveau mot de passe: ${newPass}`).catch(() => {});
-                alert(`✅ MOT DE PASSE RÉINITIALISÉ !\n\nNouveau mot de passe: ${newPass}\n\n(Copié dans le presse-papier)`);
-            } catch (error) {
-                alert("Erreur: Le professeur n'a pas de compte utilisateur lié.");
-            }
+        try {
+            const response = await api.post(`/professeurs/${id}/reset-password`);
+            setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null, isDestructive: false });
+            
+            const newPass = response.data.newPassword;
+            // Provide a mock username for display in the modal since we don't fetch it explicitly here, 
+            // but we can generate what it should be based on standard format.
+            // Or just leave username blank and only show password.
+            setSuccessModal({
+                isOpen: true,
+                username: `Pr. ${nom} ${prenom}`,
+                password: newPass,
+                title: 'Mot de passe réinitialisé !'
+            });
+        } catch (error) {
+            setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null, isDestructive: false });
+            alert("Erreur: Le professeur n'a pas de compte utilisateur lié.");
         }
     };
 
@@ -182,17 +221,17 @@ const ProfesseursList = () => {
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 <button 
-                                                    onClick={() => handleResetPassword(prof.id, prof.nom, prof.prenom)}
+                                                    onClick={() => promptResetPassword(prof.id, prof.nom, prof.prenom)}
                                                     title="Réinitialiser le mot de passe"
                                                     className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                                                 >
-                                                    <RefreshCw className="w-4 h-4" />
+                                                    <Key className="w-4 h-4" />
                                                 </button>
                                                 <button onClick={() => handleEdit(prof)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
                                                     <Edit className="w-4 h-4" />
                                                 </button>
                                                 <button 
-                                                    onClick={() => handleDelete(prof.id)}
+                                                    onClick={() => promptDelete(prof.id)}
                                                     className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
@@ -208,37 +247,42 @@ const ProfesseursList = () => {
             </div>
 
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
                         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                             <h2 className="text-xl font-bold text-slate-900">{isEditing ? 'Modifier le professeur' : 'Nouveau Professeur'}</h2>
-                            <button onClick={() => setIsModalOpen(false)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full">
+                            <button onClick={() => setIsModalOpen(false)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                            {!isEditing && (
+                                <div className="bg-indigo-50 border border-indigo-100 text-indigo-700 px-4 py-3 rounded-xl text-sm font-medium">
+                                    💡 Un compte sécurisé sera généré. Le <strong>Matricule</strong> servira de nom d'utilisateur.
+                                </div>
+                            )}
                             <div className="space-y-1.5">
-                                <label className="text-sm font-semibold text-slate-700">Matricule *</label>
-                                <input type="text" name="matricule" required value={formData.matricule} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4" placeholder="Ex: P12345" />
+                                <label className="text-sm font-semibold text-slate-700 ml-1">Matricule *</label>
+                                <input type="text" name="matricule" required value={formData.matricule} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all" placeholder="Ex: P12345" />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-semibold text-slate-700">Nom *</label>
-                                    <input type="text" name="nom" required value={formData.nom} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4" />
+                                    <label className="text-sm font-semibold text-slate-700 ml-1">Nom *</label>
+                                    <input type="text" name="nom" required value={formData.nom} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all" />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-semibold text-slate-700">Prénom *</label>
-                                    <input type="text" name="prenom" required value={formData.prenom} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4" />
+                                    <label className="text-sm font-semibold text-slate-700 ml-1">Prénom *</label>
+                                    <input type="text" name="prenom" required value={formData.prenom} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all" />
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-semibold text-slate-700">Grade</label>
-                                    <input type="text" name="grade" value={formData.grade} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4" placeholder="Ex: PES" />
+                                    <label className="text-sm font-semibold text-slate-700 ml-1">Grade</label>
+                                    <input type="text" name="grade" value={formData.grade} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all" placeholder="Ex: PES" />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-semibold text-slate-700">Filière</label>
-                                    <select name="filiereId" value={formData.filiere.id} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-700">
+                                    <label className="text-sm font-semibold text-slate-700 ml-1">Filière</label>
+                                    <select name="filiereId" value={formData.filiere.id} onChange={handleInputChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all">
                                         <option value="">-- Choisir --</option>
                                         {Array.isArray(filieres) && filieres.map(f => (
                                             <option key={f.id} value={f.id}>{f.code}</option>
@@ -247,12 +291,97 @@ const ProfesseursList = () => {
                                 </div>
                             </div>
                             <div className="pt-4 mt-6 border-t border-slate-100 flex items-center justify-end gap-3">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 text-slate-600 font-bold hover:bg-slate-100 rounded-xl">Annuler</button>
-                                <button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-xl font-bold flex items-center gap-2">
-                                    {isSubmitting ? 'Enregistrement...' : (isEditing ? 'Mettre à jour' : 'Enregistrer')}
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-all">Annuler</button>
+                                <button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2">
+                                    {isSubmitting ? (
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <>
+                                            <Save className="w-4 h-4" />
+                                            {isEditing ? 'Mettre à jour' : 'Enregistrer'}
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Success Password Modal */}
+            {successModal.isOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 text-center p-8">
+                        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Save className="w-8 h-8" />
+                        </div>
+                        <h2 className="text-2xl font-extrabold text-slate-900 mb-2">{successModal.title || 'Succès'}</h2>
+                        <p className="text-slate-500 text-sm mb-6">Le professeur peut maintenant se connecter avec ces identifiants sécurisés.</p>
+                        
+                        <div className="bg-slate-50 rounded-2xl p-4 mb-6 border border-slate-100 text-left space-y-3">
+                            <div className="flex justify-between items-center gap-4">
+                                <div className="flex-1 overflow-hidden">
+                                    <p className="text-xs font-bold text-slate-400 uppercase">Utilisateur</p>
+                                    <p className="font-mono text-slate-900 font-bold select-all truncate">{successModal.username}</p>
+                                </div>
+                                <button 
+                                    onClick={() => handleCopy(successModal.username, 'username')} 
+                                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 bg-white rounded-xl border border-slate-200 shadow-sm transition-all"
+                                    title="Copier l'utilisateur"
+                                >
+                                    {copiedField === 'username' ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                                </button>
+                            </div>
+                            <div className="h-px bg-slate-200" />
+                            <div className="flex justify-between items-center gap-4">
+                                <div className="flex-1 overflow-hidden">
+                                    <p className="text-xs font-bold text-slate-400 uppercase">Mot de passe</p>
+                                    <p className="font-mono text-indigo-600 font-black text-lg select-all tracking-wider truncate">{successModal.password}</p>
+                                </div>
+                                <button 
+                                    onClick={() => handleCopy(successModal.password, 'password')} 
+                                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 bg-white rounded-xl border border-slate-200 shadow-sm transition-all"
+                                    title="Copier le mot de passe"
+                                >
+                                    {copiedField === 'password' ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                                </button>
+                            </div>
+                        </div>
+
+                        <button 
+                            onClick={() => setSuccessModal({ isOpen: false, username: '', password: '', title: '' })}
+                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-indigo-600/20"
+                        >
+                            C'est noté !
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Custom Confirm Modal */}
+            {confirmModal.isOpen && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 text-center p-8">
+                        <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${confirmModal.isDestructive ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
+                            <AlertTriangle className="w-8 h-8" />
+                        </div>
+                        <h2 className="text-xl font-extrabold text-slate-900 mb-2">{confirmModal.title}</h2>
+                        <p className="text-slate-500 text-sm mb-8">{confirmModal.message}</p>
+                        
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null, isDestructive: false })}
+                                className="flex-1 py-3 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all"
+                            >
+                                Annuler
+                            </button>
+                            <button 
+                                onClick={confirmModal.onConfirm}
+                                className={`flex-1 py-3 rounded-xl font-bold text-white transition-all shadow-lg ${confirmModal.isDestructive ? 'bg-red-600 hover:bg-red-700 shadow-red-600/20' : 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20'}`}
+                            >
+                                Confirmer
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
